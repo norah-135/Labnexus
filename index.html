@@ -43,7 +43,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Top Global Header (واجهة طبية نظيفة خالية من المصطلحات التقنية المعقدة) -->
+  <!-- Top Global Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -71,13 +71,13 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
     <div id="app-root"></div>
 
-    <!-- ISOLATED AUDIT LOGS SECTION (قسم سجل العمليات المعزول تماماً في أسفل الصفحة) -->
+    <!-- ISOLATED AUDIT LOGS SECTION -->
     <div class="mt-20 pt-10 border-t border-slate-200">
       <div class="bg-slate-900 text-slate-200 rounded-3xl p-6 shadow-xl border border-slate-800">
         <div class="flex items-center justify-between pb-4 border-b border-slate-800">
           <div class="flex items-center gap-2.5">
             <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <h4 class="text-xs font-mono font-bold tracking-wider text-slate-300">سجل الأحداث والمطابقة التلقائية للأجهزة</h4>
+            <h4 class="text-xs font-mono font-bold tracking-wider text-slate-300">سجل الأحداث والمطابقة التلقائية للأجهزة والنماذج</h4>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="clearSystemLogs()" class="text-[11px] text-slate-400 hover:text-rose-400 font-mono transition">تفريغ السجل</button>
@@ -98,18 +98,18 @@
 
   <script>
     /* ==========================================================================
-       1. DATA STRUCTURES & LAB DEPARTMENTS
+       1. DATA STRUCTURES, LAB DEPARTMENTS & MANUAL SCHEMAS
        ========================================================================== */
 
     const PRIMARY_HOSPITAL_NAME = "مستشفى بريدة المركزي";
     const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
 
-    // الأقسام المخبرية الستة المعتمدة
+    // الأقسام المخبرية الستة
     const LAB_DEPARTMENTS = [
       { id: "Chemistry", name: "الكيمياء الحيوية (Chemistry)" },
       { id: "Hematology", name: "أمراض الدم (Hematology)" },
       { id: "Microbiology", name: "الأحياء الدقيقة (Microbiology)" },
-      { id: "Parasitology", name: "الطفيليات (Parasitology)" },
+      { id: "Parasitology", name: "الطفيليات والتحاليل المجهرية (Parasitology)" },
       { id: "Histopathology", name: "علم الأمراض والأنسجة (Histopathology)" },
       { id: "Serology", name: "المناعة والمصليات (Serology)" }
     ];
@@ -121,22 +121,59 @@
       { id: "fac-4", name: "مركز التأهيل الشامل", type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: false, owner: null }
     ];
 
-    // قائمة المحاليل وفحوصاتها
+    // قائمة الكواشف والمحاليل (فحوصات آلية + فحصين يدويين مجهريين)
     const INITIAL_REAGENTS = [
-      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", available: false }, // افتراضياً نافذ لاختبار المنع
-      { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", available: true },
-      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", available: true },
-      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", dept: "Chemistry", available: true },
-      { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", available: true },
-      { id: "culture", name: "مزرعة بكتيرية وحساسية", dept: "Microbiology", available: true }
+      { id: "expatriate_screening", name: "فحص العمالة الوافدة - ميكروبيولوجي (Expatriate Screening)", dept: "Microbiology", is_manual: true, manual_type: "worker_microbiology", available: true },
+      { id: "semen_analysis", name: "تحليل السائل المنوي المجهري (Semen Analysis)", dept: "Parasitology", is_manual: true, manual_type: "semen", available: true },
+      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", is_manual: false, available: false },
+      { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", is_manual: false, available: true },
+      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", is_manual: false, available: true },
+      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", dept: "Chemistry", is_manual: false, available: true },
+      { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", is_manual: false, available: true }
     ];
 
+    // العينات الابتدائية مع إدراج الفحصين اليدويين
     const INITIAL_SAMPLES = [
+      {
+        sample_id: "SMP-MANUAL-702",
+        patient_ref: "وافدة - 1092",
+        department: "Microbiology",
+        test_type: "فحص العمالة الوافدة - ميكروبيولوجي (Expatriate Screening)",
+        is_manual: true,
+        manual_type: "worker_microbiology",
+        sender_facility: "مستوصف الرعاية الأولية النموذجي",
+        assigned_lab: PRIMARY_HOSPITAL_NAME,
+        current_location: "قسم الميكروبيولوجي - فحص العمالة",
+        status: "Received",
+        created_at: "2026-09-07 11:45",
+        notes: "فحص الإقامة الدوري للعمالة الوافدة - قسم النساء",
+        attachment_name: "نموذج_إحالة_فحص_عمالة.pdf",
+        result: null,
+        structured_data: null
+      },
+      {
+        sample_id: "SMP-MANUAL-701",
+        patient_ref: "نزيل - 9104",
+        department: "Parasitology",
+        test_type: "تحليل السائل المنوي المجهري (Semen Analysis)",
+        is_manual: true,
+        manual_type: "semen",
+        sender_facility: PRISON_NAME,
+        assigned_lab: PRIMARY_HOSPITAL_NAME,
+        current_location: "وحدة المجهر والباراسايتولوجي",
+        status: "Received",
+        created_at: "2026-09-07 11:30",
+        notes: "تحليل سريري مجهري مطلوب متابعته مع الاستمارة",
+        attachment_name: "سجل_النزيل_السريري.pdf",
+        result: null,
+        structured_data: null
+      },
       {
         sample_id: "SMP-BRY-101",
         patient_ref: "نزيل - 8812",
         department: "Chemistry",
         test_type: "فحص السموم والمؤثرات العقلية",
+        is_manual: false,
         sender_facility: PRISON_NAME,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
         current_location: "في الطريق إلى المختبر",
@@ -144,21 +181,8 @@
         created_at: "2026-09-07 11:20",
         notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً",
         attachment_name: "تقرير_طبي_أولي.pdf",
-        result: null
-      },
-      {
-        sample_id: "SMP-BRY-102",
-        patient_ref: "نزيل - 4410",
-        department: "Hematology",
-        test_type: "تحليل دم شامل (CBC)",
-        sender_facility: PRISON_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "مختبر الاستقبال - مستشفى بريدة",
-        status: "Received",
-        created_at: "2026-09-07 10:45",
-        notes: "فحص متابعة روتيني",
-        attachment_name: null,
-        result: null
+        result: null,
+        structured_data: null
       }
     ];
 
@@ -174,7 +198,7 @@
       }
       if (!localStorage.getItem('ln_logs')) {
         localStorage.setItem('ln_logs', JSON.stringify([
-          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_READY >> Background listener active. Ready to auto-match analyzer results.`
+          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> Manual Test Templates Engine (Expatriate Screening & Semen) Active.`
         ]));
       }
       if (!localStorage.getItem('ln_user')) {
@@ -246,7 +270,7 @@
       const modalCont = document.getElementById('modal-container');
       modalCont.innerHTML = `
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity">
-          <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in duration-200">
+          <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in duration-200">
             ${contentHtml}
           </div>
         </div>
@@ -280,10 +304,6 @@
       }
     }
 
-    /* ==========================================================================
-       2. REAGENTS CONTROLS (تحكم توفر المحاليل والكواشف)
-       ========================================================================== */
-
     function toggleReagent(reagentId) {
       const reagents = db.getReagents();
       const item = reagents.find(r => r.id === reagentId);
@@ -303,8 +323,340 @@
     }
 
     /* ==========================================================================
-       3. ALWAYS-ON LISTENER & REAL CLINICAL RESULT INGESTION
-       (استماع تلقائي دائم في الخلفية + مطابقة الباركود + نتيجة سريرية واقعية)
+       2. MANUAL TEMPLATE REGISTRY (تحليل السائل المنوي + فحص العمالة الوافدة)
+       ========================================================================== */
+
+    function getManualTestType(testType) {
+      const t = testType.toLowerCase();
+      if (t.includes("عمالة") || t.includes("وافدة") || t.includes("expatriate") || t.includes("microbiology section")) {
+        return "worker_microbiology";
+      }
+      if (t.includes("منوي") || t.includes("semen")) {
+        return "semen";
+      }
+      return null;
+    }
+
+    // موجه فتح النموذج اليدوي حسب نوع الفحص
+    function openManualEntryModal(sampleId) {
+      const samples = db.getSamples();
+      const s = samples.find(item => item.sample_id === sampleId);
+      if (!s) return;
+
+      const manualType = s.manual_type || getManualTestType(s.test_type);
+
+      if (manualType === "worker_microbiology") {
+        renderWorkerMicrobiologyForm(s);
+      } else {
+        renderSemenAnalysisForm(s);
+      }
+    }
+
+    // 1. نموذج فحص العمالة الوافدة (مطابق لصورة مستشفى بريدة المركزي - قسم المختبر)
+    function renderWorkerMicrobiologyForm(s) {
+      openModal(`
+        <div class="p-6 space-y-4 max-h-[88vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">فحص يدوي مجهري</span>
+                <h3 class="font-extrabold text-slate-900 text-sm">نموذج الفحوصات المخبرية للعمالة الوافدة (فحص العمالة - نساء)</h3>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">مستشفى بريدة المركزي - قسم المختبر (MICROBIOLOGY SECTION) | العينة: ${s.sample_id}</p>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+
+          <form onsubmit="handleSaveWorkerForm(event, '${s.sample_id}')" class="space-y-4 text-xs">
+            
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <span class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i>
+                  جدول نتائج الفحوصات المخبرية (Microbiology & Parasites)
+                </span>
+                <span class="text-[10px] text-slate-400">رقم الصحة العامة: <b>P-H-3391</b></span>
+              </div>
+
+              <div class="divide-y divide-slate-200 text-xs">
+                <!-- 1. Urine pregnancy test -->
+                <div class="py-2.5 flex items-center justify-between">
+                  <span class="font-semibold text-slate-700">1. Urine: pregnancy test (فحص الحمل):</span>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                      <input type="radio" name="w_preg" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                      <input type="radio" name="w_preg" value="positive" class="accent-rose-600"> positive (إيجابي)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 2. Urine glucose -->
+                <div class="py-2.5 flex items-center justify-between">
+                  <span class="font-semibold text-slate-700">2. Urine glucose (سكر البول):</span>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                      <input type="radio" name="w_glu" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                      <input type="radio" name="w_glu" value="positive" class="accent-rose-600"> positive (إيجابي)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 3. Urine: microscopy for parasites -->
+                <div class="py-2.5 flex items-center justify-between">
+                  <span class="font-semibold text-slate-700">3. Urine: microscopy for parasites (طفيليات البول):</span>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                      <input type="radio" name="w_urine_par" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                      <input type="radio" name="w_urine_par" value="positive" class="accent-rose-600"> positive (إيجابي)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 4. Stool: microscopy for parasites -->
+                <div class="py-2.5 flex items-center justify-between">
+                  <span class="font-semibold text-slate-700">4. Stool: microscopy for parasites (طفيليات البراز):</span>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                      <input type="radio" name="w_stool_par" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                      <input type="radio" name="w_stool_par" value="positive" class="accent-rose-600"> positive (إيجابي)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 5. Stool: Culture for salmonella & shigella -->
+                <div class="py-2.5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="font-semibold text-slate-700">5. Stool: Culture for salmonella & shigella (مزرعة السالمونيلا والشيغيلا):</span>
+                    <div class="flex gap-4">
+                      <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                        <input type="radio" name="w_cult" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                      </label>
+                      <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                        <input type="radio" name="w_cult" value="positive" class="accent-rose-600"> positive (إيجابي)
+                      </label>
+                    </div>
+                  </div>
+                  <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
+                    <span class="font-bold">Antibiotic Sensitivity:</span>
+                    <span>ampicillin [S]</span> | <span>cotrimoxazole [S]</span> | <span>ciprofloxacin [S]</span>
+                  </div>
+                </div>
+
+                <!-- 6. Throat swab: stained smear for diptheria -->
+                <div class="py-2.5 flex items-center justify-between">
+                  <span class="font-semibold text-slate-700">6. Throat swab: stained smear for diptheria (مسحة الحلق للدفتيريا):</span>
+                  <div class="flex gap-4">
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
+                      <input type="radio" name="w_throat" value="negative" checked class="accent-emerald-600"> negative (سلبي)
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700">
+                      <input type="radio" name="w_throat" value="positive" class="accent-rose-600"> positive (إيجابي)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- القرار الطبي النهائي (أسفل الورقة) -->
+            <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 space-y-2">
+              <label class="block font-bold text-slate-800 text-xs">القرار الطبي النهائي (Medical Decision):</label>
+              <div class="space-y-1.5 text-xs">
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-emerald-800">
+                  <input type="radio" name="w_decision" value="clear" checked class="accent-emerald-600">
+                  { ✓ } خالية من الطفيليات والبكتيريا المعدية (Fit for Work)
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer font-bold text-rose-800">
+                  <input type="radio" name="w_decision" value="retest" class="accent-rose-600">
+                  {   } لإعادة الفحص بعد العلاج اللازم (Unfit / Needs Treatment)
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+              <span>المختص: <b>Microbiologist Sig: د. صالح الحربي</b></span>
+              <span>التاريخ: <b>${new Date().toLocaleDateString('ar-SA')}</b></span>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+              <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
+              <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>اعتماد وحفظ تقرير فحص العمالة</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `);
+      lucide.createIcons();
+    }
+
+    function handleSaveWorkerForm(e, sampleId) {
+      e.preventDefault();
+      const samples = db.getSamples();
+      const s = samples.find(item => item.sample_id === sampleId);
+      if (!s) return;
+
+      const getRadioVal = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || 'negative';
+
+      const structured = {
+        template: "worker_microbiology",
+        pregnancy: getRadioVal('w_preg'),
+        glucose: getRadioVal('w_glu'),
+        urine_parasites: getRadioVal('w_urine_par'),
+        stool_parasites: getRadioVal('w_stool_par'),
+        stool_culture: getRadioVal('w_cult'),
+        throat_diptheria: getRadioVal('w_throat'),
+        decision: getRadioVal('w_decision') === 'clear' ? 'خالية من الطفيليات والبكتيريا المعدية' : 'لإعادة الفحص بعد العلاج اللازم'
+      };
+
+      s.status = "Completed";
+      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - بريدة";
+      s.structured_data = structured;
+      s.result = `[تقرير فحص العمالة الوافدة - مستشفى بريدة المركزي]
+• Urine Pregnancy: ${structured.pregnancy.toUpperCase()}
+• Urine Glucose: ${structured.glucose.toUpperCase()}
+• Urine Parasites: ${structured.urine_parasites.toUpperCase()}
+• Stool Parasites: ${structured.stool_parasites.toUpperCase()}
+• Stool Culture (Salmonella & Shigella): ${structured.stool_culture.toUpperCase()}
+• Throat Swab (Diptheria): ${structured.throat_diptheria.toUpperCase()}
+• القرار النهائي: ${structured.decision}`;
+
+      db.saveSamples(samples);
+      db.addLog(`MANUAL_BENCH >> Expatriate Microbiology screening completed for [${sampleId}]. Result: ${structured.decision}.`);
+      closeModal();
+      showToast(`تم اعتماد تقرير فحص العمالة الوافدة للعينة (${sampleId}) بنجاح!`, 'success');
+      renderApp();
+    }
+
+    // 2. نموذج تحليل السائل المنوي (Semen Analysis Form)
+    function renderSemenAnalysisForm(s) {
+      openModal(`
+        <div class="p-6 space-y-4 max-h-[88vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">فحص يدوي مجهري</span>
+                <h3 class="font-extrabold text-slate-900 text-sm">استمارة إدخال فحص: SEMEN ANALYSIS</h3>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">Clinical Microbiology & Parasitology Unit | كود العينة: ${s.sample_id}</p>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+
+          <form onsubmit="handleSaveSemenForm(event, '${s.sample_id}')" class="space-y-4 text-xs">
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <h4 class="font-bold text-slate-800 text-xs border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                <i data-lucide="microscope" class="w-3.5 h-3.5 text-brand-600"></i>
+                <span>(A) PHYSICAL EXAMINATION (الفحص الفيزيائي)</span>
+              </h4>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Amount (الحجم)</label>
+                  <input id="f_amount" type="text" value="5 mL" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Color (اللون)</label>
+                  <input id="f_color" type="text" value="grey - white" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Appearance (المظهر)</label>
+                  <input id="f_appearance" type="text" value="homogenous" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Reaction (pH التفاعل)</label>
+                  <input id="f_reaction" type="text" value="8" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Viscosity (اللزوجة)</label>
+                  <input id="f_viscosity" type="text" value="Hyper viscid" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Liquefaction (السيولة)</label>
+                  <input id="f_liquefaction" type="text" value="40 min" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <h4 class="font-bold text-slate-800 text-xs border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-brand-600"></i>
+                <span>(B) MICROSCOPIC EXAMINATION (الفحص المجهري والعدد)</span>
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Total Count (العدد الإجمالي)</label>
+                  <input id="f_total_count" type="text" value="95,000,000" required class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-600 mb-1">Motility (Active %)</label>
+                  <input id="f_active" type="text" value="50 %" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">ملاحظة أخصائي المجهر السريرية:</label>
+              <textarea id="f_clinical_note" rows="2" class="w-full p-2.5 border border-slate-200 rounded-xl leading-relaxed">Hyper viscosity interferes with accurate count & motility</textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+              <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
+              <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>اعتماد وحفظ التقرير المجهري</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `);
+      lucide.createIcons();
+    }
+
+    function handleSaveSemenForm(e, sampleId) {
+      e.preventDefault();
+      const samples = db.getSamples();
+      const s = samples.find(item => item.sample_id === sampleId);
+      if (!s) return;
+
+      const structured = {
+        template: "semen",
+        amount: document.getElementById('f_amount').value,
+        color: document.getElementById('f_color').value,
+        appearance: document.getElementById('f_appearance').value,
+        reaction: document.getElementById('f_reaction').value,
+        viscosity: document.getElementById('f_viscosity').value,
+        liquefaction: document.getElementById('f_liquefaction').value,
+        total_count: document.getElementById('f_total_count').value,
+        active: document.getElementById('f_active').value,
+        note: document.getElementById('f_clinical_note').value
+      };
+
+      s.status = "Completed";
+      s.current_location = "تم الاعتماد من وحدة المجهر والباراسايتولوجي";
+      s.structured_data = structured;
+      s.result = `[تقرير الفحص المجهري - SEMEN ANALYSIS]
+• Total Count: ${structured.total_count} / mL
+• Physical: Amount (${structured.amount}), Color (${structured.color}), Viscosity (${structured.viscosity}), pH (${structured.reaction})
+• Motility (Active): ${structured.active}
+• Clinical Note: ${structured.note}`;
+
+      db.saveSamples(samples);
+      db.addLog(`MANUAL_BENCH >> Sample [${sampleId}] evaluated & semen analysis recorded.`);
+      closeModal();
+      showToast(`تم اعتماد نتيجة الفحص المجهري للعينة (${sampleId}) بنجاح!`, 'success');
+      renderApp();
+    }
+
+    /* ==========================================================================
+       3. ALWAYS-ON LISTENER FOR AUTOMATED ANALYZERS
        ========================================================================== */
 
     function generateRealClinicalResult(testType, patientRef) {
@@ -322,58 +674,42 @@
       } 
       else if (t.includes("سموم") || t.includes("toxicology")) {
         return `[تقرير فحص السموم والمؤثرات العقلية - قطاع السجون]
-• مشتقات الأفيونات (Opiates): سلبية (Negative)
+• مشتقات الأفيونات: سلبية (Negative)
 • الأمفيتامين والشبو: سلبية (Negative)
-• الحشيش والقنب (THC): سلبية (Negative)
-• المهدئات (Benzodiazepines): سلبية (Negative)
+• الحشيش والقنب: سلبية (Negative)
 النتيجة النهائية: العينة سلبية وسليمة لكافة المواد الخاضعة للرقابة.
 تمت المعايرة والمطابقة المخبرية آلياً بواسطة Cobas Analyzer.`;
       } 
       else if (t.includes("كبد") || t.includes("كلى") || t.includes("lft")) {
         return `[تقرير وظائف الأعضاء وكيمياء الدم]
-• الكرياتينين: 0.9 mg/dL (المعدل الطبيعي: 0.7 - 1.3)
-• نيتروجين اليوريا: 13 mg/dL (المعدل الطبيعي: 7 - 20)
-• إنزيم الكبد (ALT): 21 U/L (المعدل الطبيعي: 7 - 56)
-• إنزيم الكبد (AST): 18 U/L (المعدل الطبيعي: 10 - 40)
+• الكرياتينين: 0.9 mg/dL (طبيعي: 0.7 - 1.3)
+• نيتروجين اليوريا: 13 mg/dL (طبيعي: 7 - 20)
+• إنزيم الكبد (ALT): 21 U/L (طبيعي: 7 - 56)
 النتيجة: المؤشرات الحيوية للكبد والكلى سليمة وضمن النطاقات المرجعية.`;
-      }
-      else if (t.includes("بوتاسيوم") || t.includes("potassium")) {
-        return `[فحص شوارد الدم - إلكترولايت]
-• البوتاسيوم (K+): 4.1 mmol/L (المعدل الطبيعي: 3.5 - 5.1)
-النتيجة: النسبة متوازنة وطبيعية تماماً.`;
       }
       else {
         return `[تقرير مخبري معتمد]
-تم الفحص بواسطة جهاز التحليل الآلي بنجاح.
-النتيجة: كافة المؤشرات الحيوية طبيعية ومطابقة للمعايير المعتمدة.`;
+تم الفحص بواسطة جهاز التحليل الآلي بنجاح. كافة المؤشرات الحيوية طبيعية ومطابقة للمعايير.`;
       }
     }
 
-    // دالة المعالجة التلقائية بمجرد التقاط باركود العينة
     function autoProcessIncomingBarcode(barcode) {
       const samples = db.getSamples();
       const target = samples.find(s => s.sample_id.trim().toUpperCase() === barcode.trim().toUpperCase());
 
-      if (!target) {
-        db.addLog(`ANALYZER_SCAN >> Received barcode [${barcode}] but no matching order found.`);
-        return;
-      }
-
-      // إذا كانت العينة مكتملة مسبقاً لا حاجة لإعادة المعالجة
+      if (!target) return;
       if (target.status === 'Completed') return;
 
-      // تحديث فوري للحالة إلى "تم الفحص" وإدراج النتيجة الطبية الحقيقية
       target.status = "Completed";
       target.current_location = "تم الإنهاء بواسطة جهاز التحليل الآلي";
       target.result = generateRealClinicalResult(target.test_type, target.patient_ref);
       db.saveSamples(samples);
 
-      db.addLog(`AUTO_MATCH >> Barcode [${barcode}] matched with ${target.patient_ref}. Status moved to [تم الفحص].`);
+      db.addLog(`AUTO_MATCH >> Barcode [${barcode}] matched. Status moved to [تم الفحص].`);
       showToast(`تم الفحص: استلم النظام نتيجة العينة (${barcode}) وتم اعتمادها وتحديثها تلقائياً!`, 'success');
       renderApp();
     }
 
-    // استماع دائم وتلقائي في الخلفية بدون أي أزرار (Background Polling)
     async function backgroundDeviceListener() {
       try {
         const res = await fetch('http://localhost:5000/api/port-data');
@@ -381,20 +717,16 @@
           const data = await res.json();
           if (data.readings && data.readings.length > 0) {
             data.readings.forEach(item => {
-              if (item.barcode) {
-                autoProcessIncomingBarcode(item.barcode);
-              }
+              if (item.barcode) autoProcessIncomingBarcode(item.barcode);
             });
           }
         }
-      } catch (e) {
-        // الاستماع مستمر في الخلفية بهدوء
-      }
+      } catch (e) {}
     }
     setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       4. AUTHENTICATION & VIEWS
+       4. AUTHENTICATION & SESSIONS
        ========================================================================== */
 
     let currentAuthTab = 'login';
@@ -407,15 +739,12 @@
       app.innerHTML = `
         <div class="max-w-xl mx-auto py-6">
           <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden">
-            
             <div class="grid grid-cols-2 bg-slate-50/70 border-b border-slate-200 p-1.5 gap-1.5">
               <button onclick="switchAuthTab('login')" class="py-3 text-center text-sm font-bold rounded-xl transition ${currentAuthTab === 'login' ? 'bg-white text-brand-700 shadow-xs border border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}">
-                <i data-lucide="log-in" class="w-4 h-4 inline-block ml-1"></i>
-                تسجيل الدخول
+                <i data-lucide="log-in" class="w-4 h-4 inline-block ml-1"></i> تسجيل الدخول
               </button>
               <button onclick="switchAuthTab('claim')" class="py-3 text-center text-sm font-bold rounded-xl transition ${currentAuthTab === 'claim' ? 'bg-white text-brand-700 shadow-xs border border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}">
-                <i data-lucide="building-2" class="w-4 h-4 inline-block ml-1"></i>
-                إدراج / حجز منشأة
+                <i data-lucide="building-2" class="w-4 h-4 inline-block ml-1"></i> إدراج / حجز منشأة
               </button>
             </div>
 
@@ -425,15 +754,14 @@
                   <h2 class="text-xl font-extrabold text-slate-900">تسجيل الدخول الموحد</h2>
                   <p class="text-xs text-slate-500 mt-1">الوصول إلى بوابة الربط المخبري الموحد</p>
                 </div>
-
                 <form onsubmit="handleRegularLogin(event)" class="space-y-4">
                   <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
-                    <input type="email" id="login-email" placeholder="user@labnexus.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="email" id="login-email" placeholder="user@labnexus.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
-                    <input type="password" id="login-password" value="••••••••" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="password" id="login-password" value="••••••••" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
                   </div>
                   <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold py-3 rounded-xl shadow-md transition">
                     تسجيل الدخول
@@ -447,7 +775,7 @@
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button onclick="demoLogin('specialist')" class="p-3 text-right bg-blue-50 hover:bg-blue-100/70 border border-blue-200 rounded-xl transition group">
-                      <div class="text-xs font-extrabold text-blue-950">1. أخصائي المستشفى</div>
+                      <div class="text-xs font-extrabold text-blue-950">1. أخصائي المختبر</div>
                       <div class="text-[10px] text-blue-700 mt-0.5">مستشفى بريدة المركزي</div>
                     </button>
                     <button onclick="demoLogin('prison_sender')" class="p-3 text-right bg-amber-50 hover:bg-amber-100/70 border border-amber-200 rounded-xl transition group">
@@ -467,180 +795,57 @@
                   <h2 class="text-xl font-extrabold text-slate-900">إدراج منشأة أو جهة جديدة</h2>
                   <p class="text-xs text-slate-500 mt-1">تستطيع السجون، المستوصفات، ومراكز التأهيل الانضمام للمنظومة</p>
                 </div>
-
                 <div class="flex items-center justify-between p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-xs">
                   <span class="font-bold text-blue-900">${isSelfRegisterMode ? 'إضافة جهة غير مسجلة' : 'اختيار جهة من الدليل'}</span>
                   <button onclick="toggleSelfRegister()" class="text-brand-700 font-bold hover:underline">
                     ${isSelfRegisterMode ? 'العودة للدليل' : 'جهتك غير مدرجة؟ اضغط لإضافتها'}
                   </button>
                 </div>
-
-                ${!isSelfRegisterMode ? `
-                  <form onsubmit="handleClaimPreseeded(event)" class="space-y-4">
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر المنشأة من الدليل</label>
-                      <select id="claim-facility-select" onchange="onPreseededFacilityChange()" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <option value="">-- اضغط للاختيار من الدليل --</option>
-                        ${facilities.map(f => `
-                          <option value="${f.id}">${f.name} (${f.city}) - ${f.isClaimed ? 'محجوزة مسبقاً' : 'شاغرة ومتاحة'}</option>
-                        `).join('')}
-                      </select>
-                    </div>
-
-                    <div id="claimed-alert-banner" class="hidden p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
-                      <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 shrink-0"></i>
-                      <div>
-                        <p class="font-bold">هذه المنشأة محجوزة مسبقاً!</p>
-                        <p class="text-amber-800 mt-0.5">مسجلة للمسؤول: <span id="claimed-owner-text" class="font-bold"></span>.</p>
-                      </div>
-                    </div>
-
-                    <div id="claim-inputs-container" class="space-y-3">
-                      <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">اسم المسؤول المعتمد</label>
-                        <input id="claim-user-name" type="text" placeholder="الاسم الكامل مع اللقب" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
-                        <input id="claim-user-email" type="email" placeholder="user@entity.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                      </div>
-                      <button type="submit" id="btn-submit-claim" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-3 rounded-xl shadow-md transition">
-                        تأكيد الحجز وتفعيل الحساب
-                      </button>
-                    </div>
-                  </form>
-                ` : `
-                  <form onsubmit="handleSelfRegister(event)" class="space-y-3.5">
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">اسم المنشأة أو السجن أو المستوصف</label>
-                      <input id="self-fac-name" type="text" placeholder="مثال: مستوصف الأمل، سجن القريات..." required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                      <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">القطاع / التصنيف</label>
-                        <select id="self-fac-sector" class="w-full text-sm px-3 py-2.5 border border-slate-200 rounded-xl font-bold">
-                          <option value="المديرية العامة للسجون">سجن / إصلاحية</option>
-                          <option value="مستوصف / مجمع خاص">مستوصف / عيادات</option>
-                          <option value="مراكز التأهيل والرعاية">مركز تأهيل ورعاية</option>
-                          <option value="مستشفى حكومي / خاص">مستشفى</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">المدينة</label>
-                        <input id="self-fac-city" type="text" placeholder="مثال: بريدة" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                      </div>
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">اسم الطبيب أو المشرف المسؤول</label>
-                      <input id="self-user-name" type="text" placeholder="الاسم الثلاثي" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                    </div>
-                    <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني للجهة</label>
-                      <input id="self-user-email" type="email" placeholder="contact@domain.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                    </div>
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                      <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                      <span>إدراج الجهة وبدء إرسال العينات</span>
-                    </button>
-                  </form>
-                `}
+                <form onsubmit="handleClaimPreseeded(event)" class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر المنشأة من الدليل</label>
+                    <select id="claim-facility-select" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                      ${facilities.map(f => `<option value="${f.id}">${f.name} (${f.city})</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المسؤول المعتمد</label>
+                    <input id="claim-user-name" type="text" placeholder="الاسم الكامل" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
+                    <input id="claim-user-email" type="email" placeholder="user@entity.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
+                  </div>
+                  <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-3 rounded-xl shadow-md transition">
+                    تأكيد الحجز وتفعيل الحساب
+                  </button>
+                </form>
               </div>
             `}
-
           </div>
         </div>
       `;
       lucide.createIcons();
     }
 
-    function switchAuthTab(tab) {
-      currentAuthTab = tab;
-      renderAuthView();
-    }
-
-    function toggleSelfRegister() {
-      isSelfRegisterMode = !isSelfRegisterMode;
-      renderAuthView();
-    }
-
-    function onPreseededFacilityChange() {
-      const select = document.getElementById('claim-facility-select');
-      const banner = document.getElementById('claimed-alert-banner');
-      const ownerSpan = document.getElementById('claimed-owner-text');
-      const inputsContainer = document.getElementById('claim-inputs-container');
-      const submitBtn = document.getElementById('btn-submit-claim');
-
-      const fac = db.getFacilities().find(f => f.id === select.value);
-
-      if (fac && fac.isClaimed) {
-        banner.classList.remove('hidden');
-        ownerSpan.textContent = fac.owner || 'مسؤول معتمد';
-        inputsContainer.classList.add('opacity-40', 'pointer-events-none');
-        submitBtn.disabled = true;
-      } else {
-        banner.classList.add('hidden');
-        inputsContainer.classList.remove('opacity-40', 'pointer-events-none');
-        if (submitBtn) submitBtn.disabled = false;
-      }
-      lucide.createIcons();
-    }
+    function switchAuthTab(tab) { currentAuthTab = tab; renderAuthView(); }
+    function toggleSelfRegister() { isSelfRegisterMode = !isSelfRegisterMode; renderAuthView(); }
 
     function handleClaimPreseeded(e) {
       e.preventDefault();
       const facId = document.getElementById('claim-facility-select').value;
       const userName = document.getElementById('claim-user-name').value.trim();
       const userEmail = document.getElementById('claim-user-email').value.trim();
+      const fac = db.getFacilities().find(f => f.id === facId);
+      if (!fac) return;
 
-      const facilities = db.getFacilities();
-      const fac = facilities.find(f => f.id === facId);
-      if (!fac || fac.isClaimed) return;
-
-      fac.isClaimed = true;
-      fac.owner = userName;
-      db.saveFacilities(facilities);
-
-      const userRole = (fac.type === 'Reference Lab' || fac.type.includes('مستشفى')) ? 'specialist' : 'sender';
       loginUser({
         id: "usr-" + Date.now(),
         name: userName,
         email: userEmail,
-        role: userRole,
+        role: fac.type === 'Reference Lab' ? 'specialist' : 'sender',
         facility_id: facId,
         facility_name: fac.name
-      });
-    }
-
-    function handleSelfRegister(e) {
-      e.preventDefault();
-      const facName = document.getElementById('self-fac-name').value.trim();
-      const sector = document.getElementById('self-fac-sector').value;
-      const city = document.getElementById('self-fac-city').value.trim();
-      const userName = document.getElementById('self-user-name').value.trim();
-      const userEmail = document.getElementById('self-user-email').value.trim();
-
-      const newId = "fac-" + Date.now();
-      const isLab = sector.includes('مستشفى');
-      const newFacility = {
-        id: newId,
-        name: facName,
-        type: sector,
-        city: city,
-        isClaimed: true,
-        owner: userName
-      };
-
-      const facilities = db.getFacilities();
-      facilities.push(newFacility);
-      db.saveFacilities(facilities);
-
-      const userRole = isLab ? 'specialist' : 'sender';
-      loginUser({
-        id: "usr-" + Date.now(),
-        name: userName,
-        email: userEmail,
-        role: userRole,
-        facility_id: newId,
-        facility_name: facName
       });
     }
 
@@ -687,7 +892,7 @@
     const STATUS_MAP = {
       'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
       'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      'In-Testing': { label: 'قيد الفحص المخبري', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
       'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
 
@@ -718,13 +923,13 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">وحدة الاستقبال والتحاليل المرجعية</span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                المختص: <span class="font-bold text-slate-700">${user.name}</span> | فرز الأقسام الطبية والمطابقة التلقائية لنتائج أجهزة التحليل
+                المختص: <span class="font-bold text-slate-700">${user.name}</span> | استمارات الفحص المجهري اليدوي (Manual Bench) والأجهزة الآلية
               </p>
             </div>
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                الربط التلقائي مع أجهزة المختبر نشط
+                مستمع الأجهزة الآلية نشط
               </span>
             </div>
           </div>
@@ -739,7 +944,7 @@
               <span class="text-[11px] text-slate-400">اضغط على أي كاشف لتبديل حالته</span>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2.5">
               ${reagents.map(r => `
                 <button onclick="toggleReagent('${r.id}')" class="p-3 rounded-2xl border text-right transition flex flex-col justify-between ${
                   r.available 
@@ -749,7 +954,7 @@
                   <span class="text-xs font-bold block">${r.name}</span>
                   <div class="mt-2.5 flex items-center justify-between text-[11px] font-extrabold">
                     <span class="${r.available ? 'text-emerald-700' : 'text-rose-700'}">
-                      ${r.available ? '● متوفر' : '✖ نافذ (غير متوفر)'}
+                      ${r.available ? '● متوفر' : '✖ نافذ'}
                     </span>
                     <span class="text-[10px] text-slate-400 font-normal">تبديل</span>
                   </div>
@@ -758,7 +963,7 @@
             </div>
           </div>
 
-          <!-- Department Selector (أقسام المختبر الستة للفرز المباشر) -->
+          <!-- Department Selector -->
           <div class="flex items-center gap-2 overflow-x-auto pb-1">
             <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
               كافة الأقسام (${allSamples.length})
@@ -788,7 +993,7 @@
             </div>
             <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
               <div>
-                <p class="text-xs font-semibold text-slate-500">قيد الفحص بالجهاز</p>
+                <p class="text-xs font-semibold text-slate-500">قيد الفحص</p>
                 <p class="text-2xl font-black text-indigo-600 mt-1">${kpiTesting}</p>
               </div>
               <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="microscope" class="w-5 h-5"></i></div>
@@ -818,72 +1023,95 @@
                   <tr>
                     <th class="p-4">الباركود</th>
                     <th class="p-4">الجهة المرسلة</th>
-                    <th class="p-4">القسم المختص</th>
+                    <th class="p-4">القسم ونوع الفحص</th>
                     <th class="p-4">معرف المستفيد</th>
-                    <th class="p-4">الفحص المطلوب</th>
+                    <th class="p-4">طبيعة الفحص</th>
                     <th class="p-4">الملاحظات والمرفق</th>
                     <th class="p-4">الحالة</th>
-                    <th class="p-4 text-center">إجراءات</th>
+                    <th class="p-4 text-center">الإجراء المطلوب</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   ${samples.length === 0 ? `
                     <tr><td colspan="8" class="p-10 text-center text-slate-400">لا توجد عينات مسجلة لهذا القسم حالياً.</td></tr>
-                  ` : samples.map(s => `
-                    <tr class="hover:bg-slate-50/70 transition">
-                      <td class="p-4 font-black font-mono text-brand-700 text-sm">${s.sample_id}</td>
-                      <td class="p-4 font-bold text-slate-800">${s.sender_facility}</td>
-                      <td class="p-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px]">${s.department}</span></td>
-                      <td class="p-4 font-semibold text-slate-700">${s.patient_ref}</td>
-                      <td class="p-4 font-bold text-slate-900">${s.test_type}</td>
-                      
-                      <td class="p-4 max-w-xs">
-                        ${s.notes ? `
-                          <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 line-clamp-2">
-                            <span class="font-bold text-slate-800">ملاحظة:</span> ${s.notes}
-                          </p>
-                        ` : '<span class="text-slate-300 text-[10px]">لا توجد ملاحظات</span>'}
+                  ` : samples.map(s => {
+                    const manual = s.is_manual || getManualTestType(s.test_type);
+                    return `
+                      <tr class="hover:bg-slate-50/70 transition">
+                        <td class="p-4 font-black font-mono text-brand-700 text-sm">${s.sample_id}</td>
+                        <td class="p-4 font-bold text-slate-800">${s.sender_facility}</td>
+                        <td class="p-4">
+                          <span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px] block w-max">${s.department}</span>
+                          <span class="font-bold text-slate-900 mt-1 block">${s.test_type}</span>
+                        </td>
+                        <td class="p-4 font-semibold text-slate-700">${s.patient_ref}</td>
+                        <td class="p-4">
+                          ${manual ? `
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
+                              <i data-lucide="file-signature" class="w-3 h-3"></i> استمارة يدوية مجهرية
+                            </span>
+                          ` : `
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 inline-flex items-center gap-1">
+                              <i data-lucide="cpu" class="w-3 h-3"></i> فحص آلي بالجهاز
+                            </span>
+                          `}
+                        </td>
+                        
+                        <td class="p-4 max-w-xs">
+                          ${s.notes ? `
+                            <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 line-clamp-2">
+                              <span class="font-bold text-slate-800">ملاحظة:</span> ${s.notes}
+                            </p>
+                          ` : '<span class="text-slate-300 text-[10px]">لا توجد ملاحظات</span>'}
 
-                        ${s.attachment_name ? `
-                          <button onclick="previewFile('${s.attachment_name}', '${s.sample_id}')" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition">
-                            <i data-lucide="paperclip" class="w-3 h-3"></i>
-                            <span>${s.attachment_name}</span>
-                          </button>
-                        ` : ''}
-                      </td>
+                          ${s.attachment_name ? `
+                            <button onclick="previewFile('${s.attachment_name}', '${s.sample_id}')" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition">
+                              <i data-lucide="paperclip" class="w-3 h-3"></i>
+                              <span>${s.attachment_name}</span>
+                            </button>
+                          ` : ''}
+                        </td>
 
-                      <td class="p-4">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_MAP[s.status].color}">
-                          ${STATUS_MAP[s.status].label}
-                        </span>
-                        <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
-                      </td>
-
-                      <td class="p-4 text-center">
-                        ${s.status === 'Sent' ? `
-                          <button onclick="updateStatus('${s.sample_id}', 'Received', 'مختبر الاستقبال - مستشفى بريدة')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                            <span>تأكيد الاستلام</span>
-                          </button>
-                        ` : s.status === 'Received' ? `
-                          <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'داخل جهاز التحليل (قيد القراءة الآلية)')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
-                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                            <span>توجيه للجهاز</span>
-                          </button>
-                        ` : s.status === 'In-Testing' ? `
-                          <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
-                            بانتظار قراءة الجهاز
+                        <td class="p-4">
+                          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_MAP[s.status].color}">
+                            ${STATUS_MAP[s.status].label}
                           </span>
-                        ` : `
-                          <button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1">
-                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                            <span>عرض التقرير الطبي</span>
-                          </button>
-                        `}
-                      </td>
-                    </tr>
-                  `).join('')}
+                          <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
+                        </td>
+
+                        <td class="p-4 text-center">
+                          ${s.status === 'Sent' ? `
+                            <button onclick="updateStatus('${s.sample_id}', 'Received', 'مختبر الاستقبال - مستشفى بريدة')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
+                              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                              <span>تأكيد الاستلام</span>
+                            </button>
+                          ` : s.status === 'Received' ? `
+                            ${manual ? `
+                              <button onclick="openManualEntryModal('${s.sample_id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1.5 shadow-xs">
+                                <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                                <span>إدخال الاستمارة المجهرية</span>
+                              </button>
+                            ` : `
+                              <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'داخل جهاز التحليل (قيد القراءة الآلية)')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                <span>توجيه للجهاز</span>
+                              </button>
+                            `}
+                          ` : s.status === 'In-Testing' ? `
+                            <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-flex items-center gap-1">
+                              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                              بانتظار قراءة الجهاز
+                            </span>
+                          ` : `
+                            <button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1">
+                              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                              <span>عرض التقرير الطبي</span>
+                            </button>
+                          `}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>
@@ -899,7 +1127,7 @@
     }
 
     /* ==========================================================================
-       6. DASHBOARD: SENDER (السجون والمراكز - اختيار القسم الطبي والمرفقات)
+       6. DASHBOARD: SENDER (عيادات السجون والمراكز)
        ========================================================================== */
 
     function renderSenderDashboard(user) {
@@ -908,8 +1136,6 @@
 
       return `
         <div class="space-y-6">
-
-          <!-- Sender Header -->
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div class="flex items-center gap-2">
@@ -929,7 +1155,6 @@
             </button>
           </div>
 
-          <!-- Samples List -->
           <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -937,7 +1162,7 @@
                   <i data-lucide="route" class="w-4 h-4 text-brand-600"></i>
                   <span>شحنات العينات الصادرة والتتبع المباشر</span>
                 </h2>
-                <p class="text-xs text-slate-400 mt-0.5">تتحدث النتيجة وتتحول الحالة إلى "تم الفحص" تلقائياً فور قراءة الجهاز للباركود</p>
+                <p class="text-xs text-slate-400 mt-0.5">تتحدث النتيجة وتتحول الحالة إلى "تم الفحص" فور اعتماد الأخصائي أو قراءة الجهاز</p>
               </div>
               <span class="text-xs text-slate-500 font-bold">العينات: ${samples.length}</span>
             </div>
@@ -947,7 +1172,7 @@
                 <div class="p-12 text-center text-slate-400">لا توجد عينات مسجلة حالياً لهذه الجهة. اضغط بالأعلى لإرسال عينة جديدة.</div>
               ` : samples.map(s => {
                 const curStep = s.status === 'Sent' ? 1 : s.status === 'Received' ? 2 : s.status === 'In-Testing' ? 3 : 4;
-                const steps = ["تم الإرسال", "استلام بالمستشفى", "قيد الفحص بالجهاز", "تم الفحص"];
+                const steps = ["تم الإرسال", "استلام بالمستشفى", "قيد الفحص", "تم الفحص"];
 
                 return `
                   <div class="p-6 hover:bg-slate-50/50 transition space-y-4">
@@ -957,6 +1182,7 @@
                           <span class="font-black text-sm font-mono text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">${s.sample_id}</span>
                           <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded font-bold">${s.patient_ref}</span>
                           <span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-semibold">قسم: ${s.department}</span>
+                          ${s.is_manual ? '<span class="text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-200">استمارة يدوية مجهرية</span>' : ''}
                           <span class="text-xs text-slate-400">${s.created_at}</span>
                         </div>
                         <div class="text-xs text-slate-700">
@@ -1015,13 +1241,12 @@
               }).join('')}
             </div>
           </div>
-
         </div>
       `;
     }
 
     /* --------------------------------------------------------------------------
-       MODAL: SEND NEW SAMPLE (مع اختيار القسم المخبري وحظر المحلول النافذ)
+       MODAL: SEND NEW SAMPLE
        -------------------------------------------------------------------------- */
     function openNewSampleModal() {
       const user = db.getUser();
@@ -1046,11 +1271,10 @@
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">معرف النزيل أو المريض</label>
-                <input id="new-pat-ref" type="text" placeholder="مثال: نزيل - 7810" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
+                <input id="new-pat-ref" type="text" placeholder="مثال: وافد - 7810" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
               </div>
             </div>
 
-            <!-- قسم المختبر المستهدف -->
             <div>
               <label class="block font-bold text-slate-700 mb-1">قسم المختبر المختص بالتحليل (Department)</label>
               <select id="new-dept-select" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white">
@@ -1058,20 +1282,18 @@
               </select>
             </div>
 
-            <!-- قائمة الفحوصات مع فحص المحلول النافذ -->
             <div>
               <label class="block font-bold text-slate-700 mb-1">نوع الفحص المطلوب</label>
               <select id="new-test-type" onchange="checkReagentAvailability(this.value)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800">
                 <option value="">-- اضغط لاختيار الفحص --</option>
                 ${reagents.map(r => `
                   <option value="${r.name}" data-dept="${r.dept}">
-                    ${r.name} (${r.dept}) ${!r.available ? '✖ (نافذ بالمستشفى - غير متاح)' : '✓ (متوفر)'}
+                    ${r.name} (${r.dept}) ${r.is_manual ? '🔬 [استمارة يدوية]' : ''} ${!r.available ? '✖ (نافذ بالمستشفى)' : '✓'}
                   </option>
                 `).join('')}
               </select>
             </div>
 
-            <!-- تنبيه المنع الفوري عند اختيار محلول نافذ -->
             <div id="reagent-blocked-banner" class="hidden p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 text-xs flex items-start gap-2.5">
               <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5"></i>
               <div>
@@ -1087,20 +1309,16 @@
               <input type="text" value="${PRIMARY_HOSPITAL_NAME}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
             </div>
 
-            <!-- Notes Section -->
             <div>
               <label class="block font-bold text-slate-700 mb-1">
-                <i data-lucide="message-square-text" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i>
-                ملاحظات سريرية (كتابة نصية)
+                <i data-lucide="message-square-text" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i> ملاحظات سريرية
               </label>
               <textarea id="new-notes" rows="2" placeholder="اكتب هنا أي تفاصيل طبية خاصة بالحالة..." class="w-full p-2.5 border border-slate-200 rounded-xl"></textarea>
             </div>
 
-            <!-- Protected File Upload -->
             <div>
               <label class="block font-bold text-slate-700 mb-1">
-                <i data-lucide="paperclip" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i>
-                إرفاق تقرير طبي (PDF أو صورة - يتم قفله رقمياً مع العينة)
+                <i data-lucide="paperclip" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i> إرفاق تقرير طبي (PDF أو صورة)
               </label>
               <div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:bg-slate-50 transition cursor-pointer relative">
                 <input type="file" id="new-file" onchange="updateFileLabel(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
@@ -1122,6 +1340,7 @@
           </form>
         </div>
       `);
+      lucide.createIcons();
     }
 
     function checkReagentAvailability(testName) {
@@ -1132,11 +1351,7 @@
       const deptSelect = document.getElementById('new-dept-select');
 
       if (r) {
-        // مطابقة القسم تلقائياً مع الفحص
-        if (deptSelect && r.dept) {
-          deptSelect.value = r.dept;
-        }
-
+        if (deptSelect && r.dept) deptSelect.value = r.dept;
         if (!r.available) {
           banner.classList.remove('hidden');
           submitBtn.disabled = true;
@@ -1177,11 +1392,15 @@
       const fileInput = document.getElementById('new-file');
       const attachmentName = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : "مستند_إحالة_طبي.pdf";
 
+      const manualType = getManualTestType(testType);
+
       const newSample = {
         sample_id: smpId,
         patient_ref: patRef,
         department: dept,
         test_type: testType,
+        is_manual: Boolean(manualType),
+        manual_type: manualType,
         sender_facility: user.facility_name,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
         current_location: "في الطريق إلى مستشفى بريدة المركزي",
@@ -1189,14 +1408,15 @@
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         notes: notes,
         attachment_name: attachmentName,
-        result: null
+        result: null,
+        structured_data: null
       };
 
       const samples = db.getSamples();
       samples.unshift(newSample);
       db.saveSamples(samples);
 
-      db.addLog(`ORDER_PLACED >> Barcode ${smpId} routed to [${dept}] by ${user.facility_name}.`);
+      db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${dept}].`);
       closeModal();
       showToast(`تم إرسال العينة (${smpId}) بنجاح إلى قسم (${dept})!`, 'success');
       renderApp();
@@ -1229,6 +1449,7 @@
           </div>
         </div>
       `);
+      lucide.createIcons();
     }
 
     function showResultModal(sampleId) {
@@ -1236,7 +1457,7 @@
       if (!s) return;
 
       openModal(`
-        <div class="p-6 space-y-4">
+        <div class="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2">
               <div class="p-2 bg-emerald-100 text-emerald-700 rounded-xl"><i data-lucide="file-check-2" class="w-5 h-5"></i></div>
@@ -1250,17 +1471,50 @@
 
           <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div><span class="text-slate-400">الباركود:</span> <b class="font-mono text-brand-700">${s.sample_id}</b></div>
-            <div><span class="text-slate-400">المريض / النزيل:</span> <b>${s.patient_ref}</b></div>
+            <div><span class="text-slate-400">المريض / المستفيد:</span> <b>${s.patient_ref}</b></div>
             <div><span class="text-slate-400">القسم:</span> <b>${s.department}</b></div>
             <div><span class="text-slate-400">الفحص:</span> <b>${s.test_type}</b></div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">التقرير السريري الصادر من جهاز التحليل:</label>
-            <div class="p-4 bg-emerald-50/60 text-slate-800 rounded-2xl font-sans text-xs leading-relaxed border border-emerald-200 whitespace-pre-line font-medium">
-              ${s.result || 'لا توجد نتيجة مسجلة حتى الآن.'}
+          ${s.structured_data && s.structured_data.template === 'worker_microbiology' ? `
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs">
+              <span class="font-bold text-slate-800 text-[11px] block border-b border-slate-200 pb-1">نتائج فحص العمالة الوافدة (MICROBIOLOGY):</span>
+              <div class="grid grid-cols-2 gap-2 text-slate-700">
+                <div>Urine Pregnancy: <b class="${s.structured_data.pregnancy === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.pregnancy.toUpperCase()}</b></div>
+                <div>Urine Glucose: <b class="${s.structured_data.glucose === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.glucose.toUpperCase()}</b></div>
+                <div>Urine Parasites: <b class="${s.structured_data.urine_parasites === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.urine_parasites.toUpperCase()}</b></div>
+                <div>Stool Parasites: <b class="${s.structured_data.stool_parasites === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.stool_parasites.toUpperCase()}</b></div>
+                <div>Stool Culture: <b class="${s.structured_data.stool_culture === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.stool_culture.toUpperCase()}</b></div>
+                <div>Throat Diptheria: <b class="${s.structured_data.throat_diptheria === 'negative' ? 'text-emerald-700' : 'text-rose-700'}">${s.structured_data.throat_diptheria.toUpperCase()}</b></div>
+              </div>
+              <div class="pt-2 border-t border-slate-200 text-xs font-bold text-slate-900 flex items-center justify-between">
+                <span>القرار الطبي النهائي:</span>
+                <span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg">${s.structured_data.decision}</span>
+              </div>
             </div>
-          </div>
+          ` : s.structured_data && s.structured_data.template === 'semen' ? `
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2 text-xs">
+              <span class="font-bold text-slate-800 text-[11px] block border-b border-slate-200 pb-1">نتائج الفحص المجهري (SEMEN ANALYSIS):</span>
+              <div class="grid grid-cols-2 gap-2 text-slate-700">
+                <div>Total Count: <b>${s.structured_data.total_count} / mL</b></div>
+                <div>Amount: <b>${s.structured_data.amount}</b></div>
+                <div>Color: <b>${s.structured_data.color}</b></div>
+                <div>Viscosity: <b>${s.structured_data.viscosity}</b></div>
+                <div>Motility (Active): <b>${s.structured_data.active}</b></div>
+                <div>Reaction (pH): <b>${s.structured_data.reaction}</b></div>
+              </div>
+              <div class="pt-2 border-t border-slate-200 text-[11px]">
+                <span class="font-bold text-slate-800">Clinical Note:</span> ${s.structured_data.note}
+              </div>
+            </div>
+          ` : `
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">التقرير السريري الصادر:</label>
+              <div class="p-4 bg-emerald-50/60 text-slate-800 rounded-2xl font-sans text-xs leading-relaxed border border-emerald-200 whitespace-pre-line font-medium">
+                ${s.result || 'لا توجد نتيجة مسجلة حتى الآن.'}
+              </div>
+            </div>
+          `}
 
           <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-[11px]">
             <button onclick="window.print()" class="text-brand-600 hover:underline font-bold flex items-center gap-1">
@@ -1270,6 +1524,7 @@
           </div>
         </div>
       `);
+      lucide.createIcons();
     }
 
     function updateStatus(sampleId, newStatus, newLocation) {

@@ -43,7 +43,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Header -->
+  <!-- Top Global Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
       <div class="flex items-center gap-3">
@@ -134,10 +134,8 @@
       { id: "fac-4", name: "مركز التأهيل الشامل", type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: false, owner: null }
     ];
 
-    // تم توضيح الاسم المباشر: زراعة بول وحساسية مضادات (Urine Culture)
     const INITIAL_REAGENTS = [
-      { id: "urine_culture", name: "زراعة بول وحساسية مضادات (Urine Culture & Sensitivity)", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", available: true },
-      { id: "stool_culture", name: "زراعة براز وميكروبات معوية (Stool Culture)", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", available: true },
+      { id: "urine_culture", name: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", available: true },
       { id: "expatriate_screening", name: "فحص العمالة الوافدة (Expatriate Screening)", dept: "Parasitology", is_manual: true, manual_type: "worker_microbiology", available: true },
       { id: "semen_analysis", name: "تحليل السائل المنوي المجهري (Semen Analysis)", dept: "Parasitology", is_manual: true, manual_type: "semen", available: true },
       { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", is_manual: false, available: false },
@@ -152,7 +150,7 @@
         sample_id: "SMP-CULT-901",
         patient_ref: "نزيل - 6612",
         department: "Microbiology",
-        test_type: "زراعة بول وحساسية مضادات (Urine Culture & Sensitivity)",
+        test_type: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)",
         is_manual: true,
         manual_type: "culture_worksheet",
         sender_facility: PRISON_NAME,
@@ -225,7 +223,6 @@
         localStorage.setItem('ln_samples', JSON.stringify(INITIAL_SAMPLES));
       }
       
-      // التأكد الدائم من وجود زراعة البول في الذاكرة وتحديثها
       let currentReagents = JSON.parse(localStorage.getItem('ln_reagents') || '[]');
       const hasUrineCulture = currentReagents.some(r => r.id === 'urine_culture');
       if (!currentReagents.length || !hasUrineCulture) {
@@ -234,7 +231,7 @@
 
       if (!localStorage.getItem('ln_logs')) {
         localStorage.setItem('ln_logs', JSON.stringify([
-          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready. Urine Culture added to Microbiology.`
+          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready. Urine/Stool Culture Worksheet Form Integrated.`
         ]));
       }
       if (!localStorage.getItem('ln_user')) {
@@ -306,7 +303,7 @@
       const modalCont = document.getElementById('modal-container');
       modalCont.innerHTML = `
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity">
-          <div class="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in duration-200">
+          <div class="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in duration-200">
             ${contentHtml}
           </div>
         </div>
@@ -379,12 +376,12 @@
     }
 
     /* ==========================================================================
-       2. MANUAL TEMPLATE REGISTRY
+       2. MANUAL TEMPLATE REGISTRY (MATCHING THE EXACT ATTACHED WORKSHEET)
        ========================================================================== */
 
     function getManualTestType(testType) {
       const t = testType.toLowerCase();
-      if (t.includes("زراعة") || t.includes("مزرعة") || t.includes("culture")) return "culture_worksheet";
+      if (t.includes("زراعة") || t.includes("مزرعة") || t.includes("culture") || t.includes("worksheet")) return "culture_worksheet";
       if (t.includes("عمالة") || t.includes("وافدة") || t.includes("expatriate")) return "worker_microbiology";
       if (t.includes("منوي") || t.includes("semen")) return "semen";
       return null;
@@ -405,119 +402,237 @@
       }
     }
 
-    // استمارة زراعة البول والبراز وحساسية المضادات (URINE CULTURE WORKSHEET)
+    // استمارة ورقة عمل زراعة البول والبراز (URINE / STOOL CULTURE – WORKSHEET) مطابقة 100% للصورة
     function renderCultureWorksheetForm(s) {
-      const isUrine = s.test_type.includes("بول") || s.test_type.toLowerCase().includes("urine");
       openModal(`
-        <div class="p-6 space-y-4 max-h-[88vh] overflow-y-auto">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto text-slate-800" dir="ltr">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200">
             <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">ورقة عمل زراعة بكتيرية</span>
-                <h3 class="font-extrabold text-slate-900 text-sm">استمارة زراعة البول وحساسية المضادات (URINE CULTURE WORKSHEET)</h3>
-              </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">قسم الأحياء الدقيقة (Microbiology Section) | كود العينة: ${s.sample_id}</p>
+              <h3 class="font-extrabold text-slate-900 text-base tracking-wide">URINE / STOOL CULTURE – WORKSHEET</h3>
+              <p class="text-[11px] text-slate-500">Department of Clinical Microbiology & Infectious Disease | LabNexus LIMS</p>
             </div>
             <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
 
-          <form onsubmit="handleSaveCultureWorksheet(event, '${s.sample_id}')" class="space-y-4 text-xs">
+          <form onsubmit="handleSaveCultureWorksheet(event, '${s.sample_id}')" class="space-y-4 text-xs font-sans">
             
-            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-              <span class="font-bold text-slate-800 text-xs block border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
-                <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-brand-600"></i>
-                1. الفحص المبدئي والوسط الزراعي (Initial Culture & Macroscopy)
-              </span>
+            <!-- Patient / Sample Header Table -->
+            <table class="w-full border-collapse border border-slate-300 text-xs">
+              <tr>
+                <td class="border border-slate-300 p-2 font-bold bg-slate-50 w-32">Patient Name</td>
+                <td class="border border-slate-300 p-2"><input id="cw_pat_name" type="text" value="${s.patient_ref}" class="w-full font-bold"></td>
+              </tr>
+              <tr>
+                <td class="border border-slate-300 p-2 font-bold bg-slate-50">Sample ID</td>
+                <td class="border border-slate-300 p-2"><input id="cw_sample_id" type="text" value="${s.sample_id}" readonly class="w-full font-mono font-bold text-brand-700 bg-slate-50"></td>
+              </tr>
+              <tr>
+                <td class="border border-slate-300 p-2 font-bold bg-slate-50">Specimen</td>
+                <td class="border border-slate-300 p-2"><input id="cw_specimen" type="text" value="Urine (Midstream)" class="w-full"></td>
+              </tr>
+              <tr>
+                <td class="border border-slate-300 p-2 font-bold bg-slate-50">Collection Method</td>
+                <td class="border border-slate-300 p-2">
+                  <div class="flex items-center gap-6">
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="cw_method" value="Midstream" checked> Midstream</label>
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="cw_method" value="Catheter"> Catheter</label>
+                    <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="cw_method" value="Other"> Other</label>
+                  </div>
+                </td>
+              </tr>
+            </table>
 
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">نوع العينة (Specimen)</label>
-                  <select id="cw_specimen" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold">
-                    <option value="Urine (Midstream)" ${isUrine ? 'selected' : ''}>Urine (بول - منتصف التبول)</option>
-                    <option value="Catheterized Urine">Urine (قسطرة بولية)</option>
-                    <option value="Stool (Feces)">Stool (براز)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">المظهر الفيزيائي</label>
-                  <input id="cw_macro" type="text" value="Turbid / Cloudy (عكر)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">صبغة غرام (Gram Stain)</label>
-                  <input id="cw_gram" type="text" value="Gram Negative Bacilli (GNB)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">العدد المستعمري (Colony Count)</label>
-                  <input id="cw_count" type="text" value="> 100,000 CFU/mL (Significant)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">الأوساط الزراعية (Media Used)</label>
-                  <input id="cw_media" type="text" value="CLED Agar + Blood Agar + MacConkey" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
-                </div>
-                <div>
-                  <label class="block font-semibold text-slate-600 mb-1">البكتيريا المعزولة (Isolated Pathogen)</label>
-                  <input id="cw_organism" type="text" value="Escherichia coli (E. coli)" class="w-full px-2.5 py-1.5 bg-white border border-brand-300 rounded-lg font-bold text-brand-800">
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                <span class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                  <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-brand-600"></i>
-                  2. جدول فحص حساسية المضادات الحيوية (Antibiogram / AST Worksheet)
-                </span>
-                <span class="text-[10px] text-slate-500">طريقة: Kirby-Bauer Disc Diffusion</span>
-              </div>
-
-              <div class="overflow-x-auto">
-                <table class="w-full text-right text-xs">
-                  <thead class="bg-white text-slate-600 font-bold border-b border-slate-200">
-                    <tr>
-                      <th class="p-2">المضاد الحيوي (Antibiotic)</th>
-                      <th class="p-2">قطر التثبيط (Zone mm)</th>
-                      <th class="p-2 text-center">النتيجة (Interpretation)</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-200 bg-white">
-                    <tr>
-                      <td class="p-2 font-bold">Ciprofloxacin (CIP)</td>
-                      <td class="p-2"><input id="ast_z1" type="text" value="28 mm" class="w-20 p-1 border rounded text-center"></td>
-                      <td class="p-2 text-center"><span class="px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">Sensitive [S] (حساس)</span></td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-bold">Nitrofurantoin (F)</td>
-                      <td class="p-2"><input id="ast_z2" type="text" value="22 mm" class="w-20 p-1 border rounded text-center"></td>
-                      <td class="p-2 text-center"><span class="px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">Sensitive [S] (حساس)</span></td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-bold">Ceftriaxone (CRO)</td>
-                      <td class="p-2"><input id="ast_z3" type="text" value="24 mm" class="w-20 p-1 border rounded text-center"></td>
-                      <td class="p-2 text-center"><span class="px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">Sensitive [S] (حساس)</span></td>
-                    </tr>
-                    <tr>
-                      <td class="p-2 font-bold">Ampicillin (AMP)</td>
-                      <td class="p-2"><input id="ast_z4" type="text" value="10 mm" class="w-20 p-1 border rounded text-center"></td>
-                      <td class="p-2 text-center"><span class="px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800">Resistant [R] (مقاوم)</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+            <!-- (A) PLATE OBSERVATIONS -->
             <div>
-              <label class="block font-bold text-slate-700 mb-1">التقرير السريري وتوصية الطبيب الميكروبيولوجي:</label>
-              <textarea id="cw_report" rows="2" class="w-full p-2.5 border border-slate-200 rounded-xl leading-relaxed">Significant growth of E. coli isolated (>100,000 CFU/mL). Sensitive to Ciprofloxacin and Nitrofurantoin. Resistant to Ampicillin.</textarea>
+              <div class="font-bold text-slate-900 text-center py-1 bg-slate-100 border border-slate-300 border-b-0 uppercase">
+                (A) PLATE OBSERVATIONS
+              </div>
+              <table class="w-full border-collapse border border-slate-300 text-xs">
+                <thead>
+                  <tr class="bg-slate-50">
+                    <th class="border border-slate-300 p-2 w-1/4 text-left">Observation</th>
+                    <th class="border border-slate-300 p-2 w-3/8 text-left">PLATE 1: <input id="cw_p1_name" type="text" value="CLED Agar" class="font-bold underline bg-transparent"></th>
+                    <th class="border border-slate-300 p-2 w-3/8 text-left">PLATE 2: <input id="cw_p2_name" type="text" value="MacConkey Agar" class="font-bold underline bg-transparent"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Medium</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p1_med" type="text" value="CLED" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p2_med" type="text" value="MacConkey" class="w-full"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Growth</td>
+                    <td class="border border-slate-300 p-2">
+                      <div class="flex gap-4">
+                        <label class="flex items-center gap-1"><input type="radio" name="cw_p1_g" value="No growth"> No growth</label>
+                        <label class="flex items-center gap-1"><input type="radio" name="cw_p1_g" value="Growth" checked> Growth</label>
+                      </div>
+                    </td>
+                    <td class="border border-slate-300 p-2">
+                      <div class="flex gap-4">
+                        <label class="flex items-center gap-1"><input type="radio" name="cw_p2_g" value="No growth"> No growth</label>
+                        <label class="flex items-center gap-1"><input type="radio" name="cw_p2_g" value="Growth" checked> Growth</label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Colony count</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p1_count" type="text" value="> 100,000 CFU/mL" class="w-full font-mono"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p2_count" type="text" value="Significant growth" class="w-full font-mono"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Colony morphology</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p1_morph" type="text" value="Large, smooth, opaque colonies" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p2_morph" type="text" value="Pink lactose-fermenting colonies" class="w-full"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Color / Pigment</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p1_color" type="text" value="Yellowish" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p2_color" type="text" value="Dark Pink" class="w-full"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Hemolysis (if applicable)</td>
+                    <td class="border border-slate-300 p-2">
+                      <div class="flex gap-3">
+                        <label><input type="radio" name="cw_p1_h" value="None" checked> None</label>
+                        <label><input type="radio" name="cw_p1_h" value="alpha"> α</label>
+                        <label><input type="radio" name="cw_p1_h" value="beta"> β</label>
+                        <label><input type="radio" name="cw_p1_h" value="N/A"> N/A</label>
+                      </div>
+                    </td>
+                    <td class="border border-slate-300 p-2">
+                      <div class="flex gap-3">
+                        <label><input type="radio" name="cw_p2_h" value="None"> None</label>
+                        <label><input type="radio" name="cw_p2_h" value="alpha"> α</label>
+                        <label><input type="radio" name="cw_p2_h" value="beta"> β</label>
+                        <label><input type="radio" name="cw_p2_h" value="N/A" checked> N/A</label>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Other observations</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p1_other" type="text" value="Lactose fermented" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_p2_other" type="text" value="Bile salts precipitation noted" class="w-full"></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div class="pt-2 flex justify-end gap-2">
+            <!-- (B) ISOLATE / IDENTIFICATION -->
+            <div>
+              <div class="font-bold text-slate-900 text-center py-1 bg-slate-100 border border-slate-300 border-b-0 uppercase">
+                (B) ISOLATE / IDENTIFICATION
+              </div>
+              <table class="w-full border-collapse border border-slate-300 text-xs">
+                <thead>
+                  <tr class="bg-slate-50">
+                    <th class="border border-slate-300 p-2 w-1/5 text-left">Isolate</th>
+                    <th class="border border-slate-300 p-2 w-2/5 text-left">Organism / Identification</th>
+                    <th class="border border-slate-300 p-2 w-2/5 text-left">Gram / Key finding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-bold">Isolate 1</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_iso1_org" type="text" value="Escherichia coli (E. coli)" class="w-full font-bold text-brand-700"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_iso1_key" type="text" value="Gram Negative Bacilli (GNB), Oxidase (-), Indole (+)" class="w-full"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-bold">Isolate 2</td>
+                    <td class="border border-slate-300 p-2"><input id="cw_iso2_org" type="text" placeholder="None" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_iso2_key" type="text" placeholder="---" class="w-full"></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-semibold">Additional test</td>
+                    <td colspan="2" class="border border-slate-300 p-2"><input id="cw_add_test" type="text" value="Catalase (+), Citrate (-), Motility (+)" class="w-full"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- (D) ANTIMICROBIAL SUSCEPTIBILITY TESTING -->
+            <div>
+              <div class="font-bold text-slate-900 text-center py-1 bg-slate-100 border border-slate-300 border-b-0 uppercase">
+                (D) ANTIMICROBIAL SUSCEPTIBILITY TESTING
+              </div>
+              <table class="w-full border-collapse border border-slate-300 text-xs">
+                <thead>
+                  <tr class="bg-slate-50 text-center">
+                    <th class="border border-slate-300 p-2 text-left w-1/3">Antimicrobial</th>
+                    <th class="border border-slate-300 p-2 w-10">S</th>
+                    <th class="border border-slate-300 p-2 w-10">I</th>
+                    <th class="border border-slate-300 p-2 w-10">R</th>
+                    <th class="border border-slate-300 p-2 w-1/4">Zone / MIC</th>
+                    <th class="border border-slate-300 p-2 w-1/4">Comments</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${[
+                    { id: "amox_clav", name: "Amoxicillin/Clavulanate", defaultVal: "S", zone: "20 mm", com: "Sensitive" },
+                    { id: "amp", name: "Ampicillin", defaultVal: "R", zone: "10 mm", com: "Resistant" },
+                    { id: "cefazolin", name: "Cefazolin", defaultVal: "S", zone: "23 mm", com: "Sensitive" },
+                    { id: "ceftriaxone", name: "Ceftriaxone", defaultVal: "S", zone: "26 mm", com: "Sensitive" },
+                    { id: "cipro", name: "Ciprofloxacin", defaultVal: "S", zone: "28 mm", com: "Sensitive" },
+                    { id: "genta", name: "Gentamicin", defaultVal: "S", zone: "21 mm", com: "Sensitive" },
+                    { id: "nitro", name: "Nitrofurantoin", defaultVal: "S", zone: "22 mm", com: "Sensitive" },
+                    { id: "sxt", name: "Trimethoprim/Sulfamethoxazole", defaultVal: "R", zone: "11 mm", com: "Resistant" }
+                  ].map((drug) => `
+                    <tr>
+                      <td class="border border-slate-300 p-1.5 font-semibold">${drug.name}</td>
+                      <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_${drug.id}" value="S" ${drug.defaultVal === 'S' ? 'checked' : ''} class="accent-emerald-600"></td>
+                      <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_${drug.id}" value="I" ${drug.defaultVal === 'I' ? 'checked' : ''} class="accent-amber-600"></td>
+                      <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_${drug.id}" value="R" ${drug.defaultVal === 'R' ? 'checked' : ''} class="accent-rose-600"></td>
+                      <td class="border border-slate-300 p-1.5"><input id="ast_z_${drug.id}" type="text" value="${drug.zone}" class="w-full text-center"></td>
+                      <td class="border border-slate-300 p-1.5"><input id="ast_c_${drug.id}" type="text" value="${drug.com}" class="w-full"></td>
+                    </tr>
+                  `).join('')}
+                  <tr>
+                    <td class="border border-slate-300 p-1.5">Other: <input id="ast_other_name" type="text" placeholder="Meropenem" class="w-24 underline bg-transparent"></td>
+                    <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_other" value="S" checked class="accent-emerald-600"></td>
+                    <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_other" value="I" class="accent-amber-600"></td>
+                    <td class="border border-slate-300 p-1.5 text-center"><input type="radio" name="ast_other" value="R" class="accent-rose-600"></td>
+                    <td class="border border-slate-300 p-1.5"><input id="ast_z_other" type="text" value="30 mm" class="w-full text-center"></td>
+                    <td class="border border-slate-300 p-1.5"><input id="ast_c_other" type="text" value="Sensitive" class="w-full"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- FINAL RESULT -->
+            <div>
+              <div class="font-bold text-slate-900 text-center py-1 bg-slate-100 border border-slate-300 border-b-0 uppercase">
+                FINAL RESULT
+              </div>
+              <table class="w-full border-collapse border border-slate-300 text-xs">
+                <tr>
+                  <td class="border border-slate-300 p-2 font-bold w-1/4 bg-slate-50">Final organism</td>
+                  <td colspan="3" class="border border-slate-300 p-2"><input id="cw_final_org" type="text" value="Significant growth of Escherichia coli (>100,000 CFU/mL)" class="w-full font-bold text-emerald-700"></td>
+                </tr>
+                <tr>
+                  <td class="border border-slate-300 p-2 font-bold bg-slate-50">Comments</td>
+                  <td colspan="3" class="border border-slate-300 p-2"><textarea id="cw_final_com" rows="2" class="w-full">Isolate is sensitive to Ciprofloxacin, Nitrofurantoin, and Ceftriaxone. Resistant to Ampicillin and Co-trimoxazole.</textarea></td>
+                </tr>
+                <tr>
+                  <td class="border border-slate-300 p-2 font-semibold bg-slate-50 w-1/5">Reported by</td>
+                  <td class="border border-slate-300 p-2 w-3/10"><input id="cw_rep_by" type="text" value="Microbiologist / د. صالح الحربي" class="w-full"></td>
+                  <td class="border border-slate-300 p-2 font-semibold bg-slate-50 w-1/5">Date/Time</td>
+                  <td class="border border-slate-300 p-2 w-3/10"><input id="cw_rep_time" type="text" value="${new Date().toLocaleString('en-US')}" class="w-full font-mono"></td>
+                </tr>
+                <tr>
+                  <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Checked by</td>
+                  <td class="border border-slate-300 p-2"><input id="cw_chk_by" type="text" value="Consultant / د. عبد الرحمن التويجري" class="w-full"></td>
+                  <td class="border border-slate-300 p-2 font-semibold bg-slate-50">Date/Time</td>
+                  <td class="border border-slate-300 p-2"><input id="cw_chk_time" type="text" value="${new Date().toLocaleString('en-US')}" class="w-full font-mono"></td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="pt-3 flex justify-end gap-2" dir="rtl">
               <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
-              <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
+              <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
                 <i data-lucide="check-circle" class="w-4 h-4"></i>
-                <span>اعتماد نتيجة زراعة البول</span>
+                <span>اعتماد وحفظ استمارة المزرعة (Save Worksheet)</span>
               </button>
             </div>
           </form>
@@ -535,29 +650,45 @@
       const structured = {
         template: "culture_worksheet",
         specimen: document.getElementById('cw_specimen').value,
-        macro: document.getElementById('cw_macro').value,
-        gram: document.getElementById('cw_gram').value,
-        count: document.getElementById('cw_count').value,
-        media: document.getElementById('cw_media').value,
-        organism: document.getElementById('cw_organism').value,
-        report: document.getElementById('cw_report').value
+        collection_method: document.querySelector('input[name="cw_method"]:checked')?.value || 'Midstream',
+        plate1: {
+          name: document.getElementById('cw_p1_name').value,
+          growth: document.querySelector('input[name="cw_p1_g"]:checked')?.value || 'Growth',
+          count: document.getElementById('cw_p1_count').value,
+          morph: document.getElementById('cw_p1_morph').value,
+          color: document.getElementById('cw_p1_color').value
+        },
+        plate2: {
+          name: document.getElementById('cw_p2_name').value,
+          growth: document.querySelector('input[name="cw_p2_g"]:checked')?.value || 'Growth',
+          count: document.getElementById('cw_p2_count').value,
+          morph: document.getElementById('cw_p2_morph').value,
+          color: document.getElementById('cw_p2_color').value
+        },
+        isolate1: {
+          organism: document.getElementById('cw_iso1_org').value,
+          key: document.getElementById('cw_iso1_key').value
+        },
+        final_organism: document.getElementById('cw_final_org').value,
+        comments: document.getElementById('cw_final_com').value,
+        reported_by: document.getElementById('cw_rep_by').value,
+        checked_by: document.getElementById('cw_chk_by').value
       };
 
       s.status = "Completed";
-      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - مستشفى بريدة";
+      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - بريدة";
       s.structured_data = structured;
-      s.result = `[تقرير زراعة البول وحساسية المضادات - URINE CULTURE]
-• Specimen: ${structured.specimen}
-• Colony Count: ${structured.count}
-• Isolated Pathogen: ${structured.organism}
-• Gram Stain: ${structured.gram}
-• Sensitivity Summary: Sensitive to Ciprofloxacin [S] & Nitrofurantoin [S] | Resistant to Ampicillin [R]
-• Final Remarks: ${structured.report}`;
+      s.result = `[URINE / STOOL CULTURE – WORKSHEET]
+• Final Organism: ${structured.final_organism}
+• Specimen: ${structured.specimen} (${structured.collection_method})
+• Growth Observation: Plate 1 (${structured.plate1.name} - ${structured.plate1.count}) | Plate 2 (${structured.plate2.name} - ${structured.plate2.count})
+• AST Sensitivity Summary: Sensitive to Ciprofloxacin, Nitrofurantoin, Ceftriaxone, Gentamicin. Resistant to Ampicillin & SXT.
+• Comments: ${structured.comments}`;
 
       db.saveSamples(samples);
-      db.addLog(`CULTURE_WORKSHEET >> Sample [${sampleId}] urine culture completed. Organism: ${structured.organism}.`);
+      db.addLog(`CULTURE_WORKSHEET >> Sample [${sampleId}] verified and recorded according to Urine/Stool worksheet standard.`);
       closeModal();
-      showToast(`تم اعتماد نتيجة زراعة البول للعينة (${sampleId}) بنجاح!`, 'success');
+      showToast(`تم اعتماد وحفظ ورقة عمل المزرعة للعينة (${sampleId}) بنجاح!`, 'success');
       renderApp();
     }
 
@@ -578,6 +709,14 @@
 
           <form onsubmit="handleSaveWorkerForm(event, '${s.sample_id}')" class="space-y-4 text-xs">
             <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <span class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i>
+                  جدول نتائج الفحوصات المخبرية للوافدة
+                </span>
+                <span class="text-[10px] text-slate-400">رقم الصحة العامة: <b>P-H-3391</b></span>
+              </div>
+
               <div class="divide-y divide-slate-200 text-xs">
                 <div class="py-2.5 flex items-center justify-between">
                   <span class="font-semibold text-slate-700">1. Urine: pregnancy test (فحص الحمل):</span>
@@ -614,9 +753,6 @@
                       <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700"><input type="radio" name="w_cult" value="negative" checked class="accent-emerald-600"> negative (سلبي)</label>
                       <label class="flex items-center gap-1 cursor-pointer font-bold text-rose-700"><input type="radio" name="w_cult" value="positive" class="accent-rose-600"> positive (إيجابي)</label>
                     </div>
-                  </div>
-                  <div class="bg-white p-2 rounded-lg border border-slate-200 text-[11px] text-slate-600">
-                    <span class="font-bold">Antibiotic Sensitivity:</span> ampicillin [S] | cotrimoxazole [S] | ciprofloxacin [S]
                   </div>
                 </div>
                 <div class="py-2.5 flex items-center justify-between">
@@ -906,7 +1042,7 @@
           sample_id: "SMP-" + Math.floor(1000 + Math.random() * 9000),
           patient_ref: "مراجع - " + Math.floor(100 + Math.random() * 900),
           department: "Microbiology",
-          test_type: "زراعة بول وحساسية مضادات (Urine Culture & Sensitivity)",
+          test_type: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)",
           is_manual: true,
           manual_type: "culture_worksheet",
           sender_facility: CLINIC_NAME,
@@ -965,7 +1101,7 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">وحدة الاستقبال والتحاليل المرجعية</span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                المختص: <span class="font-bold text-slate-700">${user.name}</span> | استمارات زراعة البول، الفحص المجهري، واستقبال قراءات أجهزة المختبر
+                المختص: <span class="font-bold text-slate-700">${user.name}</span> | ورقة عمل زراعة البول والبراز (Urine/Stool Worksheet)، الفحص المجهري، والأجهزة الآلية
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -986,19 +1122,19 @@
               <span class="text-[11px] text-slate-400">اضغط على أي كاشف لتبديل حالته</span>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2.5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-8 gap-2">
               ${reagents.map(r => `
-                <button onclick="toggleReagent('${r.id}')" class="p-3 rounded-2xl border text-right transition flex flex-col justify-between ${
+                <button onclick="toggleReagent('${r.id}')" class="p-2.5 rounded-2xl border text-right transition flex flex-col justify-between ${
                   r.available 
                     ? 'bg-emerald-50/50 hover:bg-emerald-100/50 border-emerald-200 text-emerald-950' 
                     : 'bg-rose-50 hover:bg-rose-100/60 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
                 }">
-                  <span class="text-xs font-bold block">${r.name}</span>
-                  <div class="mt-2.5 flex items-center justify-between text-[11px] font-extrabold">
+                  <span class="text-[11px] font-bold block leading-tight">${r.name}</span>
+                  <div class="mt-2 flex items-center justify-between text-[10px] font-extrabold">
                     <span class="${r.available ? 'text-emerald-700' : 'text-rose-700'}">
                       ${r.available ? '● متوفر' : '✖ نافذ'}
                     </span>
-                    <span class="text-[10px] text-slate-400 font-normal">تبديل</span>
+                    <span class="text-[9px] text-slate-400 font-normal">تبديل</span>
                   </div>
                 </button>
               `).join('')}
@@ -1049,7 +1185,7 @@
             </div>
           </div>
 
-          <!-- Samples Table (مفصول تماماً: تعديل الحالة + النتيجة) -->
+          <!-- Samples Table -->
           <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -1237,7 +1373,7 @@
                           <span class="font-black text-sm font-mono text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">${s.sample_id}</span>
                           <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded font-bold">${s.patient_ref}</span>
                           <span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-semibold">قسم: ${s.department}</span>
-                          ${s.is_manual ? '<span class="text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-200">استمارة ورقة عمل يدوية</span>' : ''}
+                          ${s.is_manual ? '<span class="text-[10px] bg-purple-50 text-purple-800 px-2 py-0.5 rounded font-bold border border-purple-200">استمارة ورقة عمل يدوية</span>' : ''}
                           <span class="text-xs text-slate-400">${s.created_at}</span>
                         </div>
                         <div class="text-xs text-slate-700">
@@ -1531,21 +1667,27 @@
           </div>
 
           ${s.structured_data && s.structured_data.template === 'culture_worksheet' ? `
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs">
-              <span class="font-bold text-slate-800 text-[11px] block border-b border-slate-200 pb-1">تقرير زراعة البول وحساسية المضادات (URINE CULTURE WORKSHEET):</span>
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs" dir="ltr">
+              <span class="font-bold text-slate-800 text-xs block border-b border-slate-200 pb-1">URINE / STOOL CULTURE – FINAL WORKSHEET REPORT:</span>
               <div class="grid grid-cols-2 gap-2 text-slate-700">
-                <div>نوع العينة: <b>${s.structured_data.specimen}</b></div>
-                <div>العدد المستعمري: <b class="text-brand-700">${s.structured_data.count}</b></div>
-                <div>صبغة غرام: <b>${s.structured_data.gram}</b></div>
-                <div>البكتيريا المعزولة: <b class="text-emerald-700">${s.structured_data.organism}</b></div>
+                <div>Specimen: <b>${s.structured_data.specimen} (${s.structured_data.collection_method})</b></div>
+                <div>Colony Count: <b class="text-brand-700">${s.structured_data.plate1.count}</b></div>
+                <div>Plate 1: <b>${s.structured_data.plate1.name} (${s.structured_data.plate1.growth})</b></div>
+                <div>Plate 2: <b>${s.structured_data.plate2.name} (${s.structured_data.plate2.growth})</b></div>
               </div>
-              <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1">
-                <span class="font-bold text-slate-800 block">Antibiogram (خلاصة الحساسية للمضادات):</span>
-                <span class="text-emerald-700 font-semibold">• Sensitive (حساس): Ciprofloxacin [S], Nitrofurantoin [S]</span><br>
-                <span class="text-rose-700 font-semibold">• Resistant (مقاوم): Ampicillin [R]</span>
+              <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                <div>Final Organism: <b class="text-emerald-700 text-xs">${s.structured_data.final_organism}</b></div>
+                <div>Gram & Keys: <i>${s.structured_data.isolate1.key}</i></div>
+                <div class="pt-1 text-[11px] text-slate-600">
+                  <span class="font-bold">AST Interpretation:</span> Sensitive to Ciprofloxacin, Nitrofurantoin, Ceftriaxone, Gentamicin | Resistant to Ampicillin, SXT.
+                </div>
               </div>
-              <div class="pt-2 border-t border-slate-200 text-[11px]">
-                <span class="font-bold text-slate-800">Microbiologist Remarks:</span> ${s.structured_data.report}
+              <div class="text-[11px] text-slate-600 pt-1 border-t border-slate-200">
+                <b>Comments:</b> ${s.structured_data.comments}
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-500 pt-1">
+                <span>Reported: ${s.structured_data.reported_by}</span>
+                <span>Checked: ${s.structured_data.checked_by}</span>
               </div>
             </div>
           ` : s.structured_data && s.structured_data.template === 'worker_microbiology' ? `
@@ -1600,7 +1742,7 @@
     }
 
     /* ==========================================================================
-       7. GLOBAL ROUTER & NAV CONTROLLER
+       7. GLOBAL ROUTER & DEMO SWITCHER
        ========================================================================== */
 
     function renderNavbar() {

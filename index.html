@@ -104,7 +104,6 @@
     const PRIMARY_HOSPITAL_NAME = "مستشفى بريدة المركزي";
     const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
 
-    // الأقسام المخبرية الستة
     const LAB_DEPARTMENTS = [
       { id: "Chemistry", name: "الكيمياء الحيوية (Chemistry)" },
       { id: "Hematology", name: "أمراض الدم (Hematology)" },
@@ -121,7 +120,6 @@
       { id: "fac-4", name: "مركز التأهيل الشامل", type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: false, owner: null }
     ];
 
-    // قائمة الكواشف والمحاليل (فحوصات آلية + فحصين يدويين مجهريين)
     const INITIAL_REAGENTS = [
       { id: "expatriate_screening", name: "فحص العمالة الوافدة - ميكروبيولوجي (Expatriate Screening)", dept: "Microbiology", is_manual: true, manual_type: "worker_microbiology", available: true },
       { id: "semen_analysis", name: "تحليل السائل المنوي المجهري (Semen Analysis)", dept: "Parasitology", is_manual: true, manual_type: "semen", available: true },
@@ -132,7 +130,6 @@
       { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", is_manual: false, available: true }
     ];
 
-    // العينات الابتدائية مع إدراج الفحصين اليدويين
     const INITIAL_SAMPLES = [
       {
         sample_id: "SMP-MANUAL-702",
@@ -176,8 +173,8 @@
         is_manual: false,
         sender_facility: PRISON_NAME,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "في الطريق إلى المختبر",
-        status: "Sent",
+        current_location: "داخل جهاز الفحص الآلي",
+        status: "In-Testing",
         created_at: "2026-09-07 11:20",
         notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً",
         attachment_name: "تقرير_طبي_أولي.pdf",
@@ -323,7 +320,7 @@
     }
 
     /* ==========================================================================
-       2. MANUAL TEMPLATE REGISTRY (تحليل السائل المنوي + فحص العمالة الوافدة)
+       2. MANUAL TEMPLATE REGISTRY
        ========================================================================== */
 
     function getManualTestType(testType) {
@@ -337,7 +334,6 @@
       return null;
     }
 
-    // موجه فتح النموذج اليدوي حسب نوع الفحص
     function openManualEntryModal(sampleId) {
       const samples = db.getSamples();
       const s = samples.find(item => item.sample_id === sampleId);
@@ -352,7 +348,7 @@
       }
     }
 
-    // 1. نموذج فحص العمالة الوافدة (مطابق لصورة مستشفى بريدة المركزي - قسم المختبر)
+    // نموذج فحص العمالة الوافدة
     function renderWorkerMicrobiologyForm(s) {
       openModal(`
         <div class="p-6 space-y-4 max-h-[88vh] overflow-y-auto">
@@ -360,26 +356,24 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">فحص يدوي مجهري</span>
-                <h3 class="font-extrabold text-slate-900 text-sm">نموذج الفحوصات المخبرية للعمالة الوافدة (فحص العمالة - نساء)</h3>
+                <h3 class="font-extrabold text-slate-900 text-sm">استمارة فحص العمالة الوافدة (MICROBIOLOGY SECTION)</h3>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">مستشفى بريدة المركزي - قسم المختبر (MICROBIOLOGY SECTION) | العينة: ${s.sample_id}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">مستشفى بريدة المركزي - قسم المختبر | العينة: ${s.sample_id}</p>
             </div>
             <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
 
           <form onsubmit="handleSaveWorkerForm(event, '${s.sample_id}')" class="space-y-4 text-xs">
-            
             <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
               <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <span class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                   <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i>
-                  جدول نتائج الفحوصات المخبرية (Microbiology & Parasites)
+                  جدول نتائج الفحوصات المخبرية
                 </span>
                 <span class="text-[10px] text-slate-400">رقم الصحة العامة: <b>P-H-3391</b></span>
               </div>
 
               <div class="divide-y divide-slate-200 text-xs">
-                <!-- 1. Urine pregnancy test -->
                 <div class="py-2.5 flex items-center justify-between">
                   <span class="font-semibold text-slate-700">1. Urine: pregnancy test (فحص الحمل):</span>
                   <div class="flex gap-4">
@@ -392,7 +386,6 @@
                   </div>
                 </div>
 
-                <!-- 2. Urine glucose -->
                 <div class="py-2.5 flex items-center justify-between">
                   <span class="font-semibold text-slate-700">2. Urine glucose (سكر البول):</span>
                   <div class="flex gap-4">
@@ -405,7 +398,6 @@
                   </div>
                 </div>
 
-                <!-- 3. Urine: microscopy for parasites -->
                 <div class="py-2.5 flex items-center justify-between">
                   <span class="font-semibold text-slate-700">3. Urine: microscopy for parasites (طفيليات البول):</span>
                   <div class="flex gap-4">
@@ -418,7 +410,6 @@
                   </div>
                 </div>
 
-                <!-- 4. Stool: microscopy for parasites -->
                 <div class="py-2.5 flex items-center justify-between">
                   <span class="font-semibold text-slate-700">4. Stool: microscopy for parasites (طفيليات البراز):</span>
                   <div class="flex gap-4">
@@ -431,10 +422,9 @@
                   </div>
                 </div>
 
-                <!-- 5. Stool: Culture for salmonella & shigella -->
                 <div class="py-2.5 space-y-2">
                   <div class="flex items-center justify-between">
-                    <span class="font-semibold text-slate-700">5. Stool: Culture for salmonella & shigella (مزرعة السالمونيلا والشيغيلا):</span>
+                    <span class="font-semibold text-slate-700">5. Stool: Culture for salmonella & shigella:</span>
                     <div class="flex gap-4">
                       <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
                         <input type="radio" name="w_cult" value="negative" checked class="accent-emerald-600"> negative (سلبي)
@@ -444,15 +434,13 @@
                       </label>
                     </div>
                   </div>
-                  <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
-                    <span class="font-bold">Antibiotic Sensitivity:</span>
-                    <span>ampicillin [S]</span> | <span>cotrimoxazole [S]</span> | <span>ciprofloxacin [S]</span>
+                  <div class="bg-white p-2 rounded-lg border border-slate-200 text-[11px] text-slate-600">
+                    <span class="font-bold">Antibiotic Sensitivity:</span> ampicillin [S] | cotrimoxazole [S] | ciprofloxacin [S]
                   </div>
                 </div>
 
-                <!-- 6. Throat swab: stained smear for diptheria -->
                 <div class="py-2.5 flex items-center justify-between">
-                  <span class="font-semibold text-slate-700">6. Throat swab: stained smear for diptheria (مسحة الحلق للدفتيريا):</span>
+                  <span class="font-semibold text-slate-700">6. Throat swab: stained smear for diptheria:</span>
                   <div class="flex gap-4">
                     <label class="flex items-center gap-1 cursor-pointer font-bold text-emerald-700">
                       <input type="radio" name="w_throat" value="negative" checked class="accent-emerald-600"> negative (سلبي)
@@ -465,7 +453,6 @@
               </div>
             </div>
 
-            <!-- القرار الطبي النهائي (أسفل الورقة) -->
             <div class="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 space-y-2">
               <label class="block font-bold text-slate-800 text-xs">القرار الطبي النهائي (Medical Decision):</label>
               <div class="space-y-1.5 text-xs">
@@ -478,11 +465,6 @@
                   {   } لإعادة الفحص بعد العلاج اللازم (Unfit / Needs Treatment)
                 </label>
               </div>
-            </div>
-
-            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-              <span>المختص: <b>Microbiologist Sig: د. صالح الحربي</b></span>
-              <span>التاريخ: <b>${new Date().toLocaleDateString('ar-SA')}</b></span>
             </div>
 
             <div class="pt-2 flex justify-end gap-2">
@@ -525,8 +507,8 @@
 • Urine Glucose: ${structured.glucose.toUpperCase()}
 • Urine Parasites: ${structured.urine_parasites.toUpperCase()}
 • Stool Parasites: ${structured.stool_parasites.toUpperCase()}
-• Stool Culture (Salmonella & Shigella): ${structured.stool_culture.toUpperCase()}
-• Throat Swab (Diptheria): ${structured.throat_diptheria.toUpperCase()}
+• Stool Culture: ${structured.stool_culture.toUpperCase()}
+• Throat Diptheria: ${structured.throat_diptheria.toUpperCase()}
 • القرار النهائي: ${structured.decision}`;
 
       db.saveSamples(samples);
@@ -536,7 +518,7 @@
       renderApp();
     }
 
-    // 2. نموذج تحليل السائل المنوي (Semen Analysis Form)
+    // نموذج السائل المنوي
     function renderSemenAnalysisForm(s) {
       openModal(`
         <div class="p-6 space-y-4 max-h-[88vh] overflow-y-auto">
@@ -726,173 +708,13 @@
     setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       4. AUTHENTICATION & SESSIONS
-       ========================================================================== */
-
-    let currentAuthTab = 'login';
-    let isSelfRegisterMode = false;
-
-    function renderAuthView() {
-      const app = document.getElementById('app-root');
-      const facilities = db.getFacilities();
-
-      app.innerHTML = `
-        <div class="max-w-xl mx-auto py-6">
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden">
-            <div class="grid grid-cols-2 bg-slate-50/70 border-b border-slate-200 p-1.5 gap-1.5">
-              <button onclick="switchAuthTab('login')" class="py-3 text-center text-sm font-bold rounded-xl transition ${currentAuthTab === 'login' ? 'bg-white text-brand-700 shadow-xs border border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}">
-                <i data-lucide="log-in" class="w-4 h-4 inline-block ml-1"></i> تسجيل الدخول
-              </button>
-              <button onclick="switchAuthTab('claim')" class="py-3 text-center text-sm font-bold rounded-xl transition ${currentAuthTab === 'claim' ? 'bg-white text-brand-700 shadow-xs border border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}">
-                <i data-lucide="building-2" class="w-4 h-4 inline-block ml-1"></i> إدراج / حجز منشأة
-              </button>
-            </div>
-
-            ${currentAuthTab === 'login' ? `
-              <div class="p-6 sm:p-8 space-y-6">
-                <div class="text-right">
-                  <h2 class="text-xl font-extrabold text-slate-900">تسجيل الدخول الموحد</h2>
-                  <p class="text-xs text-slate-500 mt-1">الوصول إلى بوابة الربط المخبري الموحد</p>
-                </div>
-                <form onsubmit="handleRegularLogin(event)" class="space-y-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
-                    <input type="email" id="login-email" placeholder="user@labnexus.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
-                    <input type="password" id="login-password" value="••••••••" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
-                  </div>
-                  <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold py-3 rounded-xl shadow-md transition">
-                    تسجيل الدخول
-                  </button>
-                </form>
-
-                <div class="pt-4 border-t border-slate-100">
-                  <div class="flex items-center gap-2 mb-3">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
-                    <span class="text-xs font-extrabold text-slate-700">التبديل التجريبي السريع للأدوار:</span>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <button onclick="demoLogin('specialist')" class="p-3 text-right bg-blue-50 hover:bg-blue-100/70 border border-blue-200 rounded-xl transition group">
-                      <div class="text-xs font-extrabold text-blue-950">1. أخصائي المختبر</div>
-                      <div class="text-[10px] text-blue-700 mt-0.5">مستشفى بريدة المركزي</div>
-                    </button>
-                    <button onclick="demoLogin('prison_sender')" class="p-3 text-right bg-amber-50 hover:bg-amber-100/70 border border-amber-200 rounded-xl transition group">
-                      <div class="text-xs font-extrabold text-amber-950">2. عيادات السجن</div>
-                      <div class="text-[10px] text-amber-700 mt-0.5">جهة مرسلة (سجون)</div>
-                    </button>
-                    <button onclick="demoLogin('clinic_sender')" class="p-3 text-right bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 rounded-xl transition group">
-                      <div class="text-xs font-extrabold text-emerald-950">3. مستوصف الرعاية</div>
-                      <div class="text-[10px] text-emerald-700 mt-0.5">جهة مرسلة (مستوصف)</div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ` : `
-              <div class="p-6 sm:p-8 space-y-6">
-                <div class="text-right">
-                  <h2 class="text-xl font-extrabold text-slate-900">إدراج منشأة أو جهة جديدة</h2>
-                  <p class="text-xs text-slate-500 mt-1">تستطيع السجون، المستوصفات، ومراكز التأهيل الانضمام للمنظومة</p>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-xs">
-                  <span class="font-bold text-blue-900">${isSelfRegisterMode ? 'إضافة جهة غير مسجلة' : 'اختيار جهة من الدليل'}</span>
-                  <button onclick="toggleSelfRegister()" class="text-brand-700 font-bold hover:underline">
-                    ${isSelfRegisterMode ? 'العودة للدليل' : 'جهتك غير مدرجة؟ اضغط لإضافتها'}
-                  </button>
-                </div>
-                <form onsubmit="handleClaimPreseeded(event)" class="space-y-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر المنشأة من الدليل</label>
-                    <select id="claim-facility-select" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                      ${facilities.map(f => `<option value="${f.id}">${f.name} (${f.city})</option>`).join('')}
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المسؤول المعتمد</label>
-                    <input id="claim-user-name" type="text" placeholder="الاسم الكامل" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">البريد الإلكتروني</label>
-                    <input id="claim-user-email" type="email" placeholder="user@entity.sa" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
-                  </div>
-                  <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-3 rounded-xl shadow-md transition">
-                    تأكيد الحجز وتفعيل الحساب
-                  </button>
-                </form>
-              </div>
-            `}
-          </div>
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
-    function switchAuthTab(tab) { currentAuthTab = tab; renderAuthView(); }
-    function toggleSelfRegister() { isSelfRegisterMode = !isSelfRegisterMode; renderAuthView(); }
-
-    function handleClaimPreseeded(e) {
-      e.preventDefault();
-      const facId = document.getElementById('claim-facility-select').value;
-      const userName = document.getElementById('claim-user-name').value.trim();
-      const userEmail = document.getElementById('claim-user-email').value.trim();
-      const fac = db.getFacilities().find(f => f.id === facId);
-      if (!fac) return;
-
-      loginUser({
-        id: "usr-" + Date.now(),
-        name: userName,
-        email: userEmail,
-        role: fac.type === 'Reference Lab' ? 'specialist' : 'sender',
-        facility_id: facId,
-        facility_name: fac.name
-      });
-    }
-
-    function handleRegularLogin(e) {
-      e.preventDefault();
-      demoLogin('specialist');
-    }
-
-    function demoLogin(type) {
-      if (type === 'specialist') {
-        loginUser({
-          id: "usr-spec",
-          name: "أخصائي / صالح الحربي",
-          email: "lab.buraydah@labnexus.sa",
-          role: "specialist",
-          facility_id: "fac-1",
-          facility_name: PRIMARY_HOSPITAL_NAME
-        });
-      } else if (type === 'prison_sender') {
-        loginUser({
-          id: "usr-prison",
-          name: "رائد طبيب / خالد المطيري",
-          email: "prison.med@labnexus.sa",
-          role: "sender",
-          facility_id: "fac-2",
-          facility_name: PRISON_NAME
-        });
-      } else if (type === 'clinic_sender') {
-        loginUser({
-          id: "usr-clinic",
-          name: "د. فهد المشيقح",
-          email: "clinic.med@labnexus.sa",
-          role: "sender",
-          facility_id: "fac-3",
-          facility_name: "مستوصف الرعاية الأولية النموذجي"
-        });
-      }
-    }
-
-    /* ==========================================================================
-       5. DASHBOARD: SPECIALIST (مستشفى بريدة المركزي)
+       4. DASHBOARD: SPECIALIST (جدول مقسم: تعديل الحالة + النتيجة)
        ========================================================================== */
 
     const STATUS_MAP = {
       'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
       'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-      'In-Testing': { label: 'قيد الفحص المخبري', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
       'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
 
@@ -923,7 +745,7 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">وحدة الاستقبال والتحاليل المرجعية</span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                المختص: <span class="font-bold text-slate-700">${user.name}</span> | استمارات الفحص المجهري اليدوي (Manual Bench) والأجهزة الآلية
+                المختص: <span class="font-bold text-slate-700">${user.name}</span> | إدارة حالات العينات، استمارات الفحص المجهري، واستقبال قراءات الأجهزة
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -934,7 +756,7 @@
             </div>
           </div>
 
-          <!-- Reagent Out-of-Stock Guard Strip -->
+          <!-- Reagent Guard Strip -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
@@ -1007,14 +829,14 @@
             </div>
           </div>
 
-          <!-- Samples Table -->
+          <!-- Samples Table (مفصول: تعديل الحالة + النتيجة) -->
           <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                 <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
                 <span>قائمة عينات المختبر المرجعي (Worklist)</span>
               </h2>
-              <span class="text-xs text-slate-400">العينات المسجلة: ${samples.length}</span>
+              <span class="text-xs text-slate-400">العينات: ${samples.length}</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -1024,11 +846,11 @@
                     <th class="p-4">الباركود</th>
                     <th class="p-4">الجهة المرسلة</th>
                     <th class="p-4">القسم ونوع الفحص</th>
-                    <th class="p-4">معرف المستفيد</th>
-                    <th class="p-4">طبيعة الفحص</th>
+                    <th class="p-4">المريض / المستفيد</th>
                     <th class="p-4">الملاحظات والمرفق</th>
-                    <th class="p-4">الحالة</th>
-                    <th class="p-4 text-center">الإجراء المطلوب</th>
+                    <th class="p-4">الحالة الحالية</th>
+                    <th class="p-4 text-center">تعديل الحالة</th>
+                    <th class="p-4 text-center">النتيجة</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -1045,17 +867,6 @@
                           <span class="font-bold text-slate-900 mt-1 block">${s.test_type}</span>
                         </td>
                         <td class="p-4 font-semibold text-slate-700">${s.patient_ref}</td>
-                        <td class="p-4">
-                          ${manual ? `
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
-                              <i data-lucide="file-signature" class="w-3 h-3"></i> استمارة يدوية مجهرية
-                            </span>
-                          ` : `
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 inline-flex items-center gap-1">
-                              <i data-lucide="cpu" class="w-3 h-3"></i> فحص آلي بالجهاز
-                            </span>
-                          `}
-                        </td>
                         
                         <td class="p-4 max-w-xs">
                           ${s.notes ? `
@@ -1079,34 +890,48 @@
                           <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
                         </td>
 
+                        <!-- 1. خانة تعديل الحالة (إجراءات تغيير الموقع والمرحلة للجميع) -->
                         <td class="p-4 text-center">
-                          ${s.status === 'Sent' ? `
-                            <button onclick="updateStatus('${s.sample_id}', 'Received', 'مختبر الاستقبال - مستشفى بريدة')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
-                              <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                              <span>تأكيد الاستلام</span>
-                            </button>
-                          ` : s.status === 'Received' ? `
-                            ${manual ? `
-                              <button onclick="openManualEntryModal('${s.sample_id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1.5 shadow-xs">
-                                <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                                <span>إدخال الاستمارة المجهرية</span>
+                          <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                            ${s.status === 'Sent' ? `
+                              <button onclick="updateStatus('${s.sample_id}', 'Received', 'مختبر الاستقبال - مستشفى بريدة')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>تأكيد الاستلام</span>
                               </button>
-                            ` : `
-                              <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'داخل جهاز التحليل (قيد القراءة الآلية)')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
+                            ` : s.status === 'Received' ? `
+                              <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'وحدة التحاليل المتقدمة')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
                                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                                <span>توجيه للجهاز</span>
+                                <span>بدء الفحص</span>
                               </button>
+                            ` : s.status === 'In-Testing' ? `
+                              <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                قيد المعالجة بالمختبر
+                              </span>
+                            ` : `
+                              <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                مكتملة المراحل
+                              </span>
                             `}
-                          ` : s.status === 'In-Testing' ? `
-                            <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-flex items-center gap-1">
-                              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                          </div>
+                        </td>
+
+                        <!-- 2. خانة النتيجة (تلقائي للأجهزة / إدخال يدوي للنماذج المجهرية) -->
+                        <td class="p-4 text-center">
+                          ${s.status === 'Completed' ? `
+                            <button onclick="showResultModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto shadow-xs">
+                              <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
+                              <span>عرض التقرير</span>
+                            </button>
+                          ` : manual ? `
+                            <button onclick="openManualEntryModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto shadow-xs">
+                              <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                              <span>إدخال النتيجة</span>
+                            </button>
+                          ` : `
+                            <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
                               بانتظار قراءة الجهاز
                             </span>
-                          ` : `
-                            <button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1">
-                              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                              <span>عرض التقرير الطبي</span>
-                            </button>
                           `}
                         </td>
                       </tr>
@@ -1127,7 +952,7 @@
     }
 
     /* ==========================================================================
-       6. DASHBOARD: SENDER (عيادات السجون والمراكز)
+       5. DASHBOARD: SENDER
        ========================================================================== */
 
     function renderSenderDashboard(user) {
@@ -1221,7 +1046,6 @@
                       </div>
                     </div>
 
-                    <!-- Progress Stepper -->
                     <div class="pt-2">
                       <div class="grid grid-cols-4 gap-2">
                         ${steps.map((label, idx) => {
@@ -1541,7 +1365,7 @@
     }
 
     /* ==========================================================================
-       7. GLOBAL ROUTER & NAV CONTROLLER
+       6. GLOBAL ROUTER & NAV CONTROLLER
        ========================================================================== */
 
     function renderNavbar() {

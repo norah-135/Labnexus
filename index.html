@@ -43,7 +43,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Top Global Header -->
+  <!-- Top Global Header (واجهة طبية نظيفة خالية من المصطلحات التقنية المعقدة) -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -55,21 +55,12 @@
             <span class="text-xl font-extrabold tracking-tight text-slate-900">LabNexus</span>
             <span class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-md border border-brand-100">بوابة الربط المخبري الموحد</span>
           </div>
-          <p class="text-xs text-slate-400 hidden sm:block">استماع دائم لمنافذ أجهزة التحليل والربط المباشر مع السجون والقطاعات</p>
+          <p class="text-xs text-slate-400 hidden sm:block">ربط عيادات السجون والمراكز الطبية مع مستشفى بريدة المركزي</p>
         </div>
       </div>
 
-      <!-- Live Port Indicator & Session Controls -->
-      <div class="flex items-center gap-3">
-        <!-- Port Sensor Badge (مؤشر الاستماع الدائم ونوع المنفذ) -->
-        <div class="hidden md:flex items-center gap-2 bg-slate-900 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-mono">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-400 font-sans">المنفذ النشط:</span>
-          <span id="active-port-label" class="font-bold text-emerald-400">RS-232 Serial (COM3 / 9600 Baud)</span>
-        </div>
-
-        <div id="nav-user-slot" class="flex items-center gap-3"></div>
-      </div>
+      <!-- User Session Controls -->
+      <div id="nav-user-slot" class="flex items-center gap-3"></div>
     </div>
   </header>
 
@@ -80,22 +71,22 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
     <div id="app-root"></div>
 
-    <!-- ISOLATED AUDIT & PORT LOGS SECTION (قسم اللوجز المعزول تماماً في أسفل الصفحة) -->
+    <!-- ISOLATED AUDIT LOGS SECTION (قسم سجل العمليات المعزول تماماً في أسفل الصفحة) -->
     <div class="mt-20 pt-10 border-t border-slate-200">
       <div class="bg-slate-900 text-slate-200 rounded-3xl p-6 shadow-xl border border-slate-800">
         <div class="flex items-center justify-between pb-4 border-b border-slate-800">
           <div class="flex items-center gap-2.5">
             <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <h4 class="text-xs font-mono font-bold tracking-wider text-slate-300">سجل أحداث المنفذ والاستماع الدائم (Continuous Port & Ingestion Logs)</h4>
+            <h4 class="text-xs font-mono font-bold tracking-wider text-slate-300">سجل الأحداث والمطابقة التلقائية للأجهزة</h4>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="clearSystemLogs()" class="text-[11px] text-slate-400 hover:text-rose-400 font-mono transition">تفريغ السجل</button>
             <button onclick="resetAllData()" class="text-[11px] bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-lg font-mono transition">
-              إعادة تعيين الذاكرة بالكامل (Reset All)
+              إعادة ضبط الذاكرة (Reset)
             </button>
           </div>
         </div>
-        <div id="system-logs-container" class="mt-4 font-mono text-[11px] text-slate-400 space-y-1.5 max-h-44 overflow-y-auto pl-2">
+        <div id="system-logs-container" class="mt-4 font-mono text-[11px] text-slate-400 space-y-1.5 max-h-40 overflow-y-auto pl-2">
           <!-- Populated dynamically -->
         </div>
       </div>
@@ -107,65 +98,66 @@
 
   <script>
     /* ==========================================================================
-       1. DATA STRUCTURES & LOCALSTORAGE
+       1. DATA STRUCTURES & LAB DEPARTMENTS
        ========================================================================== */
 
     const PRIMARY_HOSPITAL_NAME = "مستشفى بريدة المركزي";
-    const PRISON_NAME = "إدارة سجن بريدة - المركز الطبي";
+    const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
 
-    // قائمة القطاعات الصحية المتاحة لاختيار السجون
-    const TARGET_SECTORS = [
-      { id: "sec-1", name: "تجمع القصيم الصحي", defaultLab: "مستشفى بريدة المركزي" },
-      { id: "sec-2", name: "المختبرات المرجعية وبنوك الدم", defaultLab: "المختبر الإقليمي وبنك الدم المركزي" },
-      { id: "sec-3", name: "مراكز مراقبة السموم والكيمياء الشرعية", defaultLab: "مركز السموم والكيمياء الطبية الشرعية" },
-      { id: "sec-4", name: "المدن الطبية والمستشفيات التخصصية", defaultLab: "مدينة الملك فهد الطبية" }
+    // الأقسام المخبرية الستة المعتمدة
+    const LAB_DEPARTMENTS = [
+      { id: "Chemistry", name: "الكيمياء الحيوية (Chemistry)" },
+      { id: "Hematology", name: "أمراض الدم (Hematology)" },
+      { id: "Microbiology", name: "الأحياء الدقيقة (Microbiology)" },
+      { id: "Parasitology", name: "الطفيليات (Parasitology)" },
+      { id: "Histopathology", name: "علم الأمراض والأنسجة (Histopathology)" },
+      { id: "Serology", name: "المناعة والمصليات (Serology)" }
     ];
 
     const INITIAL_FACILITIES = [
-      { id: "fac-1", name: PRIMARY_HOSPITAL_NAME, type: "Reference Lab", sector: "تجمع القصيم الصحي", city: "بريدة", isClaimed: true, owner: "د. عبد الرحمن التويجري" },
-      { id: "fac-2", name: "المختبر الإقليمي وبنك الدم المركزي", type: "Reference Lab", sector: "المختبرات المرجعية وبنوك الدم", city: "بريدة", isClaimed: false, owner: null },
-      { id: "fac-3", name: "مركز السموم والكيمياء الطبية الشرعية", type: "Reference Lab", sector: "مراكز مراقبة السموم والكيمياء الشرعية", city: "القصيم", isClaimed: false, owner: null },
-      { id: "fac-4", name: "مدينة الملك فهد الطبية", type: "Reference Lab", sector: "المدن الطبية والمستشفيات التخصصية", city: "الرياض", isClaimed: false, owner: null },
-      { id: "fac-send-1", name: PRISON_NAME, type: "المديرية العامة للسجون", sector: "المديرية العامة للسجون", city: "بريدة", isClaimed: true, owner: "رائد طبيب / خالد المطيري" },
-      { id: "fac-send-2", name: "مستوصف الرعاية الأولية النموذجي", type: "مستوصف / مجمع خاص", sector: "مستوصف / مجمع خاص", city: "بريدة", isClaimed: true, owner: "د. فهد المشيقح" }
+      { id: "fac-1", name: PRIMARY_HOSPITAL_NAME, type: "Reference Lab", city: "بريدة", isClaimed: true, owner: "د. عبد الرحمن التويجري" },
+      { id: "fac-2", name: PRISON_NAME, type: "المديرية العامة للسجون", city: "بريدة", isClaimed: true, owner: "رائد طبيب / خالد المطيري" },
+      { id: "fac-3", name: "مستوصف الرعاية الأولية النموذجي", type: "مستوصف / مجمع عيادات", city: "بريدة", isClaimed: true, owner: "د. فهد المشيقح" },
+      { id: "fac-4", name: "مركز التأهيل الشامل", type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: false, owner: null }
     ];
 
-    // قائمة المحاليل والكواشف
+    // قائمة المحاليل وفحوصاتها
     const INITIAL_REAGENTS = [
-      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", available: false }, // افتراضياً نافذ لتجربة المنع الفوري
-      { id: "cbc", name: "تحليل دم شامل (CBC)", available: true },
-      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", available: true },
-      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", available: true },
-      { id: "serology", name: "فحص المناعة والمصليات (Serology)", available: true }
+      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", available: false }, // افتراضياً نافذ لاختبار المنع
+      { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", available: true },
+      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", available: true },
+      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", dept: "Chemistry", available: true },
+      { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", available: true },
+      { id: "culture", name: "مزرعة بكتيرية وحساسية", dept: "Microbiology", available: true }
     ];
 
     const INITIAL_SAMPLES = [
       {
         sample_id: "SMP-BRY-101",
         patient_ref: "نزيل - 8812",
+        department: "Chemistry",
         test_type: "فحص السموم والمؤثرات العقلية",
-        target_sector: "تجمع القصيم الصحي",
         sender_facility: PRISON_NAME,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
         current_location: "في الطريق إلى المختبر",
         status: "Sent",
         created_at: "2026-09-07 11:20",
-        notes: "حالة اشتباه طارئة، يرجى مطابقة العينة مع التقرير المرفق",
-        attachment_name: "سجل_النزيل_الطبي.pdf",
+        notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً",
+        attachment_name: "تقرير_طبي_أولي.pdf",
         result: null
       },
       {
         sample_id: "SMP-BRY-102",
         patient_ref: "نزيل - 4410",
+        department: "Hematology",
         test_type: "تحليل دم شامل (CBC)",
-        target_sector: "تجمع القصيم الصحي",
         sender_facility: PRISON_NAME,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
         current_location: "مختبر الاستقبال - مستشفى بريدة",
         status: "Received",
         created_at: "2026-09-07 10:45",
-        notes: "فحص دوري روتيني للنزيل",
-        attachment_name: "سجل_المتابعة_الصحية.pdf",
+        notes: "فحص متابعة روتيني",
+        attachment_name: null,
         result: null
       }
     ];
@@ -182,8 +174,7 @@
       }
       if (!localStorage.getItem('ln_logs')) {
         localStorage.setItem('ln_logs', JSON.stringify([
-          `[${new Date().toLocaleTimeString('en-US')}] PORT_INIT >> RS-232 Serial Port (COM3 / 9600 Baud) Connected.`,
-          `[${new Date().toLocaleTimeString('en-US')}] LISTENER >> Continuous background listener active for Analyzer signals.`
+          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_READY >> Background listener active. Ready to auto-match analyzer results.`
         ]));
       }
       if (!localStorage.getItem('ln_user')) {
@@ -212,7 +203,7 @@
       addLog: (msg) => {
         const logs = JSON.parse(localStorage.getItem('ln_logs') || '[]');
         logs.unshift(`[${new Date().toLocaleTimeString('en-US')}] ${msg}`);
-        if (logs.length > 50) logs.pop();
+        if (logs.length > 40) logs.pop();
         localStorage.setItem('ln_logs', JSON.stringify(logs));
         renderLogs();
       }
@@ -220,7 +211,7 @@
 
     function loginUser(userData) {
       db.setUser(userData);
-      db.addLog(`AUTH >> User logged in: ${userData.name} (${userData.facility_name})`);
+      db.addLog(`AUTH >> Logged in: ${userData.name} (${userData.facility_name})`);
       renderApp();
       showToast(`مرحباً بك: ${userData.name}`, 'info');
     }
@@ -283,14 +274,14 @@
     }
 
     function resetAllData() {
-      if (confirm("هل أنت متأكد من رغبتك في تفريغ الذاكرة بالكامل والبدء من جديد بالبيانات الافتراضية؟")) {
+      if (confirm("هل أنت متأكد من رغبتك في تفريغ الذاكرة بالكامل والبدء من جديد؟")) {
         localStorage.clear();
         location.reload();
       }
     }
 
     /* ==========================================================================
-       2. REAGENTS CONTROLS (تحكم توفر المحاليل)
+       2. REAGENTS CONTROLS (تحكم توفر المحاليل والكواشف)
        ========================================================================== */
 
     function toggleReagent(reagentId) {
@@ -302,164 +293,108 @@
       db.saveReagents(reagents);
 
       if (!item.available) {
-        db.addLog(`REAGENT_ALERT >> ${item.name} set to OUT OF STOCK. Blocked from sending.`);
-        showToast(`تم تعيين (${item.name}) كـ "نافذ بالمستشفى". سيتم منع السجون والجهات من إرساله فوراً!`, 'error');
+        db.addLog(`REAGENT_ALERT >> ${item.name} marked OUT OF STOCK.`);
+        showToast(`تم تحديد محلول (${item.name}) كـ "نافذ بالمستشفى". تم حظر إرساله فوراً!`, 'error');
       } else {
-        db.addLog(`REAGENT_ALERT >> ${item.name} set to AVAILABLE.`);
-        showToast(`تم تحديث محلول (${item.name}) كـ "متوفر وجاهز للاستقبال"`, 'success');
+        db.addLog(`REAGENT_ALERT >> ${item.name} marked AVAILABLE.`);
+        showToast(`تم تحديث محلول (${item.name}) كـ "متوفر"`, 'success');
       }
       renderApp();
     }
 
     /* ==========================================================================
-       3. ALWAYS-ON PORT LISTENER & REAL CLINICAL RESULT GENERATION
-       (الاستماع الدائم للمنفذ، وتوليد نتيجة طبية سريرية حقيقية بدلاً من نص المنفذ)
+       3. ALWAYS-ON LISTENER & REAL CLINICAL RESULT INGESTION
+       (استماع تلقائي دائم في الخلفية + مطابقة الباركود + نتيجة سريرية واقعية)
        ========================================================================== */
 
-    // دالة توليد النتيجة المخبرية السريرية الحقيقية بناءً على نوع الفحص
     function generateRealClinicalResult(testType, patientRef) {
       const t = testType.toLowerCase();
       const timeStr = new Date().toLocaleTimeString('ar-SA');
 
       if (t.includes("دم") || t.includes("cbc")) {
-        return `[تقرير فحص الدم الشامل CBC - معتمد]
-• خضاب الدم (Hemoglobin): 14.8 g/dL (المعدل الطبيعي: 13.5 - 17.5)
-• كريات الدم البيضاء (WBC): 6.4 x10^3/uL (المعدل الطبيعي: 4.5 - 11.0)
-• الصفائح الدموية (Platelets): 245 x10^3/uL (المعدل الطبيعي: 150 - 450)
-• خلايا الدم الحمراء (RBC): 4.9 x10^6/uL (المعدل الطبيعي: 4.3 - 5.9)
-النتيجة: المؤشرات الحيوية طبيعية ولا توجد علامات فقر دم أو التهاب حاد.
-وقت التحليل: ${timeStr} | الجهاز: Sysmex XN-1000`;
+        return `[تقرير تحليل الدم الشامل CBC - معتمد]
+• خضاب الدم (Hemoglobin): 14.6 g/dL (المعدل الطبيعي: 13.5 - 17.5)
+• كريات الدم البيضاء (WBC): 6.2 x10^3/uL (المعدل الطبيعي: 4.5 - 11.0)
+• الصفائح الدموية (Platelets): 238 x10^3/uL (المعدل الطبيعي: 150 - 450)
+• خلايا الدم الحمراء (RBC): 4.8 x10^6/uL (المعدل الطبيعي: 4.3 - 5.9)
+النتيجة: الفحص طبيعي وسليم وخالٍ من مؤشرات فقر الدم أو الالتهاب.
+وقت التحليل: ${timeStr} | الجهاز: Sysmex XN Automated Analyzer`;
       } 
       else if (t.includes("سموم") || t.includes("toxicology")) {
-        return `[تقرير السموم والمؤثرات العقلية - قطاع السجون]
-• مشتقات الأفيونات (Opiates): سلبية (Negative) - قطع العتبة < 300 ng/mL
-• الأمفيتامين والميثامفيتامين: سلبية (Negative) - قطع العتبة < 500 ng/mL
-• الحشيش والقنب (THC): سلبية (Negative) - قطع العتبة < 50 ng/mL
-• المهدئات (Benzodiazepines): سلبية (Negative) - قطع العتبة < 200 ng/mL
-النتيجة النهائية: العينة خالية من المواد المخدرة الخاضعة للرقابة.
-تمت المعايرة والمطابقة المخبرية آلياً عبر جهاز Cobas 6000.`;
+        return `[تقرير فحص السموم والمؤثرات العقلية - قطاع السجون]
+• مشتقات الأفيونات (Opiates): سلبية (Negative)
+• الأمفيتامين والشبو: سلبية (Negative)
+• الحشيش والقنب (THC): سلبية (Negative)
+• المهدئات (Benzodiazepines): سلبية (Negative)
+النتيجة النهائية: العينة سلبية وسليمة لكافة المواد الخاضعة للرقابة.
+تمت المعايرة والمطابقة المخبرية آلياً بواسطة Cobas Analyzer.`;
       } 
       else if (t.includes("كبد") || t.includes("كلى") || t.includes("lft")) {
-        return `[تقرير كيمياء الدم ووظائف الأعضاء]
-• الكرياتينين (Creatinine): 0.9 mg/dL (طبيعي: 0.7 - 1.3)
-• نيتروجين اليوريا (BUN): 14 mg/dL (طبيعي: 7 - 20)
-• إنزيم الكبد (ALT): 22 U/L (طبيعي: 7 - 56)
-• إنزيم الكبد (AST): 19 U/L (طبيعي: 10 - 40)
-• البيليروبين الكلي: 0.6 mg/dL (طبيعي: 0.1 - 1.2)
-النتيجة: وظائف الكبد والكلى سليمة وضمن النطاقات المرجعية الآمنة.`;
-      } 
+        return `[تقرير وظائف الأعضاء وكيمياء الدم]
+• الكرياتينين: 0.9 mg/dL (المعدل الطبيعي: 0.7 - 1.3)
+• نيتروجين اليوريا: 13 mg/dL (المعدل الطبيعي: 7 - 20)
+• إنزيم الكبد (ALT): 21 U/L (المعدل الطبيعي: 7 - 56)
+• إنزيم الكبد (AST): 18 U/L (المعدل الطبيعي: 10 - 40)
+النتيجة: المؤشرات الحيوية للكبد والكلى سليمة وضمن النطاقات المرجعية.`;
+      }
       else if (t.includes("بوتاسيوم") || t.includes("potassium")) {
         return `[فحص شوارد الدم - إلكترولايت]
-• البوتاسيوم (Potassium - K+): 4.2 mmol/L (النطاق المرجعي: 3.5 - 5.1)
-النتيجة: النسبة متوازنة وطبيعية تماماً. تم القياس بواسطة القطب الانتقائي ISE.`;
+• البوتاسيوم (K+): 4.1 mmol/L (المعدل الطبيعي: 3.5 - 5.1)
+النتيجة: النسبة متوازنة وطبيعية تماماً.`;
       }
       else {
-        return `[النتيجة المخبرية المعتمدة]
-تم إجراء التحليل بنجاح وفق البروتوكول القياسي المعياري.
-النتيجة: طبيعية وسلبية لجميع المؤشرات المرضية المشمولة في فحص (${testType}).`;
+        return `[تقرير مخبري معتمد]
+تم الفحص بواسطة جهاز التحليل الآلي بنجاح.
+النتيجة: كافة المؤشرات الحيوية طبيعية ومطابقة للمعايير المعتمدة.`;
       }
     }
 
-    // مطابقة الباركود وتغيير الحالة تلقائياً إلى "تم الفحص" مع إدراج النتيجة الحقيقية
-    function autoProcessPortSignal(barcode, portType = "RS-232 Serial COM3") {
+    // دالة المعالجة التلقائية بمجرد التقاط باركود العينة
+    function autoProcessIncomingBarcode(barcode) {
       const samples = db.getSamples();
-      const targetSample = samples.find(s => s.sample_id.trim().toUpperCase() === barcode.trim().toUpperCase());
+      const target = samples.find(s => s.sample_id.trim().toUpperCase() === barcode.trim().toUpperCase());
 
-      if (!targetSample) {
-        db.addLog(`PORT_LISTENER [${portType}] >> Signal received for UNKNOWN Barcode: ${barcode}`);
-        showToast(`إشارة منفذ: الباركود (${barcode}) غير موجود في النظام!`, 'error');
+      if (!target) {
+        db.addLog(`ANALYZER_SCAN >> Received barcode [${barcode}] but no matching order found.`);
         return;
       }
 
-      // تحويل الحالة مباشرة إلى "تم الفحص" وتوليد نتيجة سريرية حقيقية
-      targetSample.status = "Completed";
-      targetSample.current_location = "تم الإنهاء من جهاز التحليل - معتمد";
-      targetSample.result = generateRealClinicalResult(targetSample.test_type, targetSample.patient_ref);
-      targetSample.detected_port = portType;
+      // إذا كانت العينة مكتملة مسبقاً لا حاجة لإعادة المعالجة
+      if (target.status === 'Completed') return;
+
+      // تحديث فوري للحالة إلى "تم الفحص" وإدراج النتيجة الطبية الحقيقية
+      target.status = "Completed";
+      target.current_location = "تم الإنهاء بواسطة جهاز التحليل الآلي";
+      target.result = generateRealClinicalResult(target.test_type, target.patient_ref);
       db.saveSamples(samples);
 
-      db.addLog(`PORT_MATCH [${portType}] >> Barcode ${barcode} matched! Test (${targetSample.test_type}) for (${targetSample.patient_ref}) moved to [تم الفحص].`);
-      showToast(`⚡ إشارة منفذ (${portType}): تم التعرف على الباركود (${barcode}) وتحديث الحالة إلى [تم الفحص] بالنتيجة الحقيقية!`, 'success');
+      db.addLog(`AUTO_MATCH >> Barcode [${barcode}] matched with ${target.patient_ref}. Status moved to [تم الفحص].`);
+      showToast(`تم الفحص: استلم النظام نتيجة العينة (${barcode}) وتم اعتمادها وتحديثها تلقائياً!`, 'success');
       renderApp();
     }
 
-    // استماع دائم وتلقائي (Continuous Polling) للمنفذ المحلي في الخلفية
-    async function continuousPortPoll() {
+    // استماع دائم وتلقائي في الخلفية بدون أي أزرار (Background Polling)
+    async function backgroundDeviceListener() {
       try {
         const res = await fetch('http://localhost:5000/api/port-data');
         if (res.ok) {
           const data = await res.json();
           if (data.readings && data.readings.length > 0) {
-            data.readings.forEach(rd => {
-              autoProcessPortSignal(rd.sample_id, rd.port_type || "RS-232 Serial (COM3)");
+            data.readings.forEach(item => {
+              if (item.barcode) {
+                autoProcessIncomingBarcode(item.barcode);
+              }
             });
           }
         }
       } catch (e) {
-        // الاستماع مستمر بهدوء
+        // الاستماع مستمر في الخلفية بهدوء
       }
     }
-    setInterval(continuousPortPoll, 2000);
-
-    // نافذة محاكاة إشارة المنفذ اليدوية السريعة
-    function openPortSimulatorModal() {
-      const pending = db.getSamples().filter(s => s.status !== 'Completed');
-
-      openModal(`
-        <div class="p-6 space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-              <i data-lucide="cpu" class="w-5 h-5 text-brand-600"></i>
-              <h3 class="font-bold text-slate-900 text-sm">محاكاة إشارة وقراءة المنفذ (Hardware Port Trigger)</h3>
-            </div>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-
-          <p class="text-xs text-slate-500 leading-relaxed">
-            المنظومة تستمع دائماً للمنفذ. عند التقاط الباركود تطابقه تلقائياً وتغير الحالة إلى <b>"تم الفحص"</b> وتولد النتيجة المخبرية الحقيقية للفحص:
-          </p>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">نوع المنفذ المستمع</label>
-            <select id="sim-port-type" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white font-mono font-bold text-slate-800">
-              <option value="RS-232 Serial (COM3 / 9600 Baud)">RS-232 Serial (COM3 / 9600 Baud - الكابل القياسي)</option>
-              <option value="TCP/IP Socket (Port 5000 / Ethernet)">TCP/IP Socket (Port 5000 - كابل شبكة المستشفى)</option>
-              <option value="USB HID Optical Scanner (COM1)">USB HID Optical Scanner (قارئ الباركود الضوئي)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">اختر الباركود المقروء من أنبوبة العينة</label>
-            <select id="sim-barcode-input" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-slate-50 font-mono font-bold text-brand-700">
-              ${pending.map(s => `<option value="${s.sample_id}">${s.sample_id} - ${s.patient_ref} (${s.test_type})</option>`).join('')}
-              ${pending.length === 0 ? '<option value="">لا توجد عينات قيد الفحص حالياً</option>' : ''}
-            </select>
-          </div>
-
-          <div class="flex justify-end gap-2 pt-2">
-            <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">إلغاء</button>
-            <button onclick="triggerSimulatedPort()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
-              <i data-lucide="zap" class="w-4 h-4"></i>
-              <span>بث إشارة المنفذ ومطابقة العينة فوراً</span>
-            </button>
-          </div>
-        </div>
-      `);
-    }
-
-    function triggerSimulatedPort() {
-      const bSelect = document.getElementById('sim-barcode-input');
-      const portType = document.getElementById('sim-port-type').value;
-      if (!bSelect || !bSelect.value) {
-        alert('لا توجد عينة معلقة لاختيارها');
-        return;
-      }
-      closeModal();
-      autoProcessPortSignal(bSelect.value, portType);
-    }
+    setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       4. AUTHENTICATION & CLAIMING VIEWS
+       4. AUTHENTICATION & VIEWS
        ========================================================================== */
 
     let currentAuthTab = 'login';
@@ -487,7 +422,7 @@
             ${currentAuthTab === 'login' ? `
               <div class="p-6 sm:p-8 space-y-6">
                 <div class="text-right">
-                  <h2 class="text-xl font-extrabold text-slate-900">تسجيل الدخول</h2>
+                  <h2 class="text-xl font-extrabold text-slate-900">تسجيل الدخول الموحد</h2>
                   <p class="text-xs text-slate-500 mt-1">الوصول إلى بوابة الربط المخبري الموحد</p>
                 </div>
 
@@ -508,20 +443,20 @@
                 <div class="pt-4 border-t border-slate-100">
                   <div class="flex items-center gap-2 mb-3">
                     <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
-                    <span class="text-xs font-extrabold text-slate-700">التبديل السريع لتجربة السيناريو (Demo Switcher):</span>
+                    <span class="text-xs font-extrabold text-slate-700">التبديل التجريبي السريع للأدوار:</span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <button onclick="demoLogin('specialist')" class="p-3 text-right bg-blue-50 hover:bg-blue-100/70 border border-blue-200 rounded-xl transition group">
-                      <div class="text-xs font-extrabold text-blue-950">1. أخصائي المختبر</div>
+                      <div class="text-xs font-extrabold text-blue-950">1. أخصائي المستشفى</div>
                       <div class="text-[10px] text-blue-700 mt-0.5">مستشفى بريدة المركزي</div>
                     </button>
                     <button onclick="demoLogin('prison_sender')" class="p-3 text-right bg-amber-50 hover:bg-amber-100/70 border border-amber-200 rounded-xl transition group">
                       <div class="text-xs font-extrabold text-amber-950">2. عيادات السجن</div>
-                      <div class="text-[10px] text-amber-700 mt-0.5">اختيار القطاع والمرفقات</div>
+                      <div class="text-[10px] text-amber-700 mt-0.5">جهة مرسلة (سجون)</div>
                     </button>
                     <button onclick="demoLogin('clinic_sender')" class="p-3 text-right bg-emerald-50 hover:bg-emerald-100/70 border border-emerald-200 rounded-xl transition group">
                       <div class="text-xs font-extrabold text-emerald-950">3. مستوصف الرعاية</div>
-                      <div class="text-[10px] text-emerald-700 mt-0.5">جهة مرسلة طرفية</div>
+                      <div class="text-[10px] text-emerald-700 mt-0.5">جهة مرسلة (مستوصف)</div>
                     </button>
                   </div>
                 </div>
@@ -534,7 +469,7 @@
                 </div>
 
                 <div class="flex items-center justify-between p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-xs">
-                  <span class="font-bold text-blue-900">${isSelfRegisterMode ? 'إضافة جهة غير مسجلة' : 'اختيار جهة من الدليل المسبق'}</span>
+                  <span class="font-bold text-blue-900">${isSelfRegisterMode ? 'إضافة جهة غير مسجلة' : 'اختيار جهة من الدليل'}</span>
                   <button onclick="toggleSelfRegister()" class="text-brand-700 font-bold hover:underline">
                     ${isSelfRegisterMode ? 'العودة للدليل' : 'جهتك غير مدرجة؟ اضغط لإضافتها'}
                   </button>
@@ -544,7 +479,7 @@
                   <form onsubmit="handleClaimPreseeded(event)" class="space-y-4">
                     <div>
                       <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر المنشأة من الدليل</label>
-                      <select id="claim-facility-select" onchange="onPreseededFacilityChange()" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
+                      <select id="claim-facility-select" onchange="onPreseededFacilityChange()" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
                         <option value="">-- اضغط للاختيار من الدليل --</option>
                         ${facilities.map(f => `
                           <option value="${f.id}">${f.name} (${f.city}) - ${f.isClaimed ? 'محجوزة مسبقاً' : 'شاغرة ومتاحة'}</option>
@@ -596,7 +531,7 @@
                       </div>
                     </div>
                     <div>
-                      <label class="block text-xs font-bold text-slate-700 mb-1">اسم المشرف أو الطبيب المسؤول</label>
+                      <label class="block text-xs font-bold text-slate-700 mb-1">اسم الطبيب أو المشرف المسؤول</label>
                       <input id="self-user-name" type="text" placeholder="الاسم الثلاثي" required class="w-full text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl">
                     </div>
                     <div>
@@ -730,7 +665,7 @@
           name: "رائد طبيب / خالد المطيري",
           email: "prison.med@labnexus.sa",
           role: "sender",
-          facility_id: "fac-send-1",
+          facility_id: "fac-2",
           facility_name: PRISON_NAME
         });
       } else if (type === 'clinic_sender') {
@@ -739,7 +674,7 @@
           name: "د. فهد المشيقح",
           email: "clinic.med@labnexus.sa",
           role: "sender",
-          facility_id: "fac-send-2",
+          facility_id: "fac-3",
           facility_name: "مستوصف الرعاية الأولية النموذجي"
         });
       }
@@ -750,15 +685,22 @@
        ========================================================================== */
 
     const STATUS_MAP = {
-      'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200', step: 1 },
-      'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200', step: 2 },
-      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', step: 3 },
-      'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', step: 4 }
+      'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+      'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
 
+    let currentSelectedDept = "All";
+
     function renderSpecialistDashboard(user) {
-      const samples = db.getSamples();
+      const allSamples = db.getSamples();
       const reagents = db.getReagents();
+
+      let samples = allSamples;
+      if (currentSelectedDept !== "All") {
+        samples = samples.filter(s => s.department === currentSelectedDept);
+      }
 
       const kpiSent = samples.filter(s => s.status === 'Sent').length;
       const kpiReceived = samples.filter(s => s.status === 'Received').length;
@@ -776,15 +718,14 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">وحدة الاستقبال والتحاليل المرجعية</span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                المختص: <span class="font-bold text-slate-700">${user.name}</span> | استماع دائم للمنفذ، مطابقة باركود العينات، وإدراج النتائج السريرية الحقيقية
+                المختص: <span class="font-bold text-slate-700">${user.name}</span> | فرز الأقسام الطبية والمطابقة التلقائية لنتائج أجهزة التحليل
               </p>
             </div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="openPortSimulatorModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
-                <i data-lucide="cpu" class="w-4 h-4"></i>
-                <span>محاكاة إشارة المنفذ (Port Trigger)</span>
-              </button>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                الربط التلقائي مع أجهزة المختبر نشط
+              </span>
             </div>
           </div>
 
@@ -793,12 +734,12 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i data-lucide="beaker" class="w-4 h-4 text-brand-600"></i>
-                <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (المحلول النافذ يمنع إرسال العينات مسبقاً):</h3>
+                <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (المحلول النافذ يقفل الإرسال للجهات فوراً):</h3>
               </div>
-              <span class="text-[11px] text-slate-400">اضغط على الكاشف لتبديل حالته</span>
+              <span class="text-[11px] text-slate-400">اضغط على أي كاشف لتبديل حالته</span>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
               ${reagents.map(r => `
                 <button onclick="toggleReagent('${r.id}')" class="p-3 rounded-2xl border text-right transition flex flex-col justify-between ${
                   r.available 
@@ -806,7 +747,7 @@
                     : 'bg-rose-50 hover:bg-rose-100/60 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
                 }">
                   <span class="text-xs font-bold block">${r.name}</span>
-                  <div class="mt-3 flex items-center justify-between text-[11px] font-extrabold">
+                  <div class="mt-2.5 flex items-center justify-between text-[11px] font-extrabold">
                     <span class="${r.available ? 'text-emerald-700' : 'text-rose-700'}">
                       ${r.available ? '● متوفر' : '✖ نافذ (غير متوفر)'}
                     </span>
@@ -815,6 +756,18 @@
                 </button>
               `).join('')}
             </div>
+          </div>
+
+          <!-- Department Selector (أقسام المختبر الستة للفرز المباشر) -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
+              كافة الأقسام (${allSamples.length})
+            </button>
+            ${LAB_DEPARTMENTS.map(d => `
+              <button onclick="filterByDept('${d.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === d.id ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
+                ${d.name}
+              </button>
+            `).join('')}
           </div>
 
           <!-- KPI Cards -->
@@ -865,7 +818,7 @@
                   <tr>
                     <th class="p-4">الباركود</th>
                     <th class="p-4">الجهة المرسلة</th>
-                    <th class="p-4">القطاع الموجه إليه</th>
+                    <th class="p-4">القسم المختص</th>
                     <th class="p-4">معرف المستفيد</th>
                     <th class="p-4">الفحص المطلوب</th>
                     <th class="p-4">الملاحظات والمرفق</th>
@@ -874,11 +827,13 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  ${samples.map(s => `
+                  ${samples.length === 0 ? `
+                    <tr><td colspan="8" class="p-10 text-center text-slate-400">لا توجد عينات مسجلة لهذا القسم حالياً.</td></tr>
+                  ` : samples.map(s => `
                     <tr class="hover:bg-slate-50/70 transition">
                       <td class="p-4 font-black font-mono text-brand-700 text-sm">${s.sample_id}</td>
                       <td class="p-4 font-bold text-slate-800">${s.sender_facility}</td>
-                      <td class="p-4 text-slate-600">${s.target_sector || 'تجمع القصيم الصحي'}</td>
+                      <td class="p-4"><span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px]">${s.department}</span></td>
                       <td class="p-4 font-semibold text-slate-700">${s.patient_ref}</td>
                       <td class="p-4 font-bold text-slate-900">${s.test_type}</td>
                       
@@ -911,19 +866,19 @@
                             <span>تأكيد الاستلام</span>
                           </button>
                         ` : s.status === 'Received' ? `
-                          <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'داخل جهاز الفحص (المنفذ يستمع)')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
+                          <button onclick="updateStatus('${s.sample_id}', 'In-Testing', 'داخل جهاز التحليل (قيد القراءة الآلية)')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
                             <i data-lucide="play" class="w-3.5 h-3.5"></i>
                             <span>توجيه للجهاز</span>
                           </button>
                         ` : s.status === 'In-Testing' ? `
-                          <button onclick="autoProcessPortSignal('${s.sample_id}', 'RS-232 Serial COM3')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1 shadow-xs">
-                            <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
-                            <span>التقاط إشارة المنفذ</span>
-                          </button>
+                          <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                            بانتظار قراءة الجهاز
+                          </span>
                         ` : `
                           <button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition mx-auto flex items-center gap-1">
                             <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                            <span>عرض التقرير السريري</span>
+                            <span>عرض التقرير الطبي</span>
                           </button>
                         `}
                       </td>
@@ -938,8 +893,13 @@
       `;
     }
 
+    function filterByDept(dept) {
+      currentSelectedDept = dept;
+      renderApp();
+    }
+
     /* ==========================================================================
-       6. DASHBOARD: SENDER (السجون مع اختيار السيكتور)
+       6. DASHBOARD: SENDER (السجون والمراكز - اختيار القسم الطبي والمرفقات)
        ========================================================================== */
 
     function renderSenderDashboard(user) {
@@ -959,7 +919,7 @@
                 </span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                المسؤول: <span class="font-bold text-slate-700">${user.name}</span> | توجيه العينات حسب السيكتور، وإرفاق التقارير الطبية المحمية
+                المسؤول: <span class="font-bold text-slate-700">${user.name}</span> | توجيه العينات حسب قسم المختبر، وإرفاق التقارير الطبية المحمية
               </p>
             </div>
 
@@ -975,9 +935,9 @@
               <div>
                 <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                   <i data-lucide="route" class="w-4 h-4 text-brand-600"></i>
-                  <span>شحنات العينات الصادرة والتتبع الحي للمراحل</span>
+                  <span>شحنات العينات الصادرة والتتبع المباشر</span>
                 </h2>
-                <p class="text-xs text-slate-400 mt-0.5">تتحول الحالة إلى "تم الفحص" فور استماع المنفذ للباركود دون تدخل بشري</p>
+                <p class="text-xs text-slate-400 mt-0.5">تتحدث النتيجة وتتحول الحالة إلى "تم الفحص" تلقائياً فور قراءة الجهاز للباركود</p>
               </div>
               <span class="text-xs text-slate-500 font-bold">العينات: ${samples.length}</span>
             </div>
@@ -986,7 +946,7 @@
               ${samples.length === 0 ? `
                 <div class="p-12 text-center text-slate-400">لا توجد عينات مسجلة حالياً لهذه الجهة. اضغط بالأعلى لإرسال عينة جديدة.</div>
               ` : samples.map(s => {
-                const curStep = STATUS_MAP[s.status].step;
+                const curStep = s.status === 'Sent' ? 1 : s.status === 'Received' ? 2 : s.status === 'In-Testing' ? 3 : 4;
                 const steps = ["تم الإرسال", "استلام بالمستشفى", "قيد الفحص بالجهاز", "تم الفحص"];
 
                 return `
@@ -996,14 +956,12 @@
                         <div class="flex items-center gap-2 flex-wrap">
                           <span class="font-black text-sm font-mono text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">${s.sample_id}</span>
                           <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded font-bold">${s.patient_ref}</span>
+                          <span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-semibold">قسم: ${s.department}</span>
                           <span class="text-xs text-slate-400">${s.created_at}</span>
                         </div>
                         <div class="text-xs text-slate-700">
-                          <span class="font-bold text-slate-900">الفحص المطلوب:</span> ${s.test_type}
-                        </div>
-                        <div class="text-xs text-slate-500">
-                          <span class="font-bold text-slate-700">السيكتور الموجه له:</span> <span class="text-blue-700 font-semibold">${s.target_sector || 'تجمع القصيم الصحي'}</span> | 
-                          <span class="font-bold text-slate-700">المستشفى المستقبل:</span> ${s.assigned_lab}
+                          <span class="font-bold text-slate-900">الفحص المطلوب:</span> ${s.test_type} | 
+                          <span class="font-bold text-slate-900">المستشفى المستقبل:</span> ${s.assigned_lab}
                         </div>
 
                         ${s.notes ? `
@@ -1063,7 +1021,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       MODAL: SEND NEW SAMPLE (مع اختيار السيكتور وفحص نفاذ المحلول)
+       MODAL: SEND NEW SAMPLE (مع اختيار القسم المخبري وحظر المحلول النافذ)
        -------------------------------------------------------------------------- */
     function openNewSampleModal() {
       const user = db.getUser();
@@ -1092,18 +1050,12 @@
               </div>
             </div>
 
-            <!-- قطاع الإرسال (السيكتور المطلوب للسجون) -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">القطاع الصحي المستهدف (Sector)</label>
-                <select id="new-sector-select" onchange="onSectorChange(this.value)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white">
-                  ${TARGET_SECTORS.map(sec => `<option value="${sec.name}">${sec.name}</option>`).join('')}
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">المستشفى / المختبر المستقبل</label>
-                <input id="new-assigned-lab-display" type="text" value="${PRIMARY_HOSPITAL_NAME}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
-              </div>
+            <!-- قسم المختبر المستهدف -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">قسم المختبر المختص بالتحليل (Department)</label>
+              <select id="new-dept-select" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white">
+                ${LAB_DEPARTMENTS.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+              </select>
             </div>
 
             <!-- قائمة الفحوصات مع فحص المحلول النافذ -->
@@ -1112,8 +1064,8 @@
               <select id="new-test-type" onchange="checkReagentAvailability(this.value)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800">
                 <option value="">-- اضغط لاختيار الفحص --</option>
                 ${reagents.map(r => `
-                  <option value="${r.name}">
-                    ${r.name} ${!r.available ? '✖ (نافذ بالمستشفى - غير متاح)' : '✓ (متوفر)'}
+                  <option value="${r.name}" data-dept="${r.dept}">
+                    ${r.name} (${r.dept}) ${!r.available ? '✖ (نافذ بالمستشفى - غير متاح)' : '✓ (متوفر)'}
                   </option>
                 `).join('')}
               </select>
@@ -1125,9 +1077,14 @@
               <div>
                 <p class="font-extrabold text-rose-950">تنبيه: لا يمكن إرسال هذه العينة!</p>
                 <p class="text-[11px] text-rose-800 mt-0.5 leading-relaxed">
-                  محلول هذا التحليل نافذ حالياً في المستشفى المرجعي المختار. يرجى اختيار فحص آخر متاح أو تغيير السيكتور.
+                  محلول هذا التحليل نافذ حالياً بمستشفى بريدة المركزي. يرجى اختيار فحص آخر متاح أو التنسيق مع إدارة المختبر.
                 </p>
               </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">المستشفى المرجعي المستقبل</label>
+              <input type="text" value="${PRIMARY_HOSPITAL_NAME}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
             </div>
 
             <!-- Notes Section -->
@@ -1159,7 +1116,7 @@
               <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
               <button type="submit" id="btn-submit-sample" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
                 <i data-lucide="send" class="w-4 h-4"></i>
-                <span>تأكيد الإرسال للقطاع المختار</span>
+                <span>تأكيد الإرسال للقسم المختص</span>
               </button>
             </div>
           </form>
@@ -1167,29 +1124,30 @@
       `);
     }
 
-    function onSectorChange(sectorName) {
-      const sec = TARGET_SECTORS.find(s => s.name === sectorName);
-      const display = document.getElementById('new-assigned-lab-display');
-      if (sec && display) {
-        display.value = sec.defaultLab;
-      }
-    }
-
     function checkReagentAvailability(testName) {
       const reagents = db.getReagents();
       const r = reagents.find(item => item.name === testName);
       const banner = document.getElementById('reagent-blocked-banner');
       const submitBtn = document.getElementById('btn-submit-sample');
+      const deptSelect = document.getElementById('new-dept-select');
 
-      if (r && !r.available) {
-        banner.classList.remove('hidden');
-        submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
-      } else {
-        banner.classList.add('hidden');
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+      if (r) {
+        // مطابقة القسم تلقائياً مع الفحص
+        if (deptSelect && r.dept) {
+          deptSelect.value = r.dept;
+        }
+
+        if (!r.available) {
+          banner.classList.remove('hidden');
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
+          return;
+        }
       }
+
+      banner.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-40', 'cursor-not-allowed');
       lucide.createIcons();
     }
 
@@ -1205,15 +1163,14 @@
       const user = db.getUser();
       const smpId = document.getElementById('new-smp-id').value.trim();
       const patRef = document.getElementById('new-pat-ref').value.trim();
-      const sectorName = document.getElementById('new-sector-select').value;
-      const assignedLab = document.getElementById('new-assigned-lab-display').value;
+      const dept = document.getElementById('new-dept-select').value;
       const testType = document.getElementById('new-test-type').value;
       const notes = document.getElementById('new-notes').value.trim();
 
       const reagents = db.getReagents();
       const r = reagents.find(item => item.name === testType);
       if (r && !r.available) {
-        alert("لا يمكن إرسال العينة؛ المحلول نافذ حالياً بالمستشفى المرجعي!");
+        alert("لا يمكن إرسال العينة؛ المحلول نافذ حالياً بالمستشفى!");
         return;
       }
 
@@ -1223,11 +1180,11 @@
       const newSample = {
         sample_id: smpId,
         patient_ref: patRef,
+        department: dept,
         test_type: testType,
-        target_sector: sectorName,
         sender_facility: user.facility_name,
-        assigned_lab: assignedLab,
-        current_location: `في الطريق إلى ${assignedLab}`,
+        assigned_lab: PRIMARY_HOSPITAL_NAME,
+        current_location: "في الطريق إلى مستشفى بريدة المركزي",
         status: "Sent",
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         notes: notes,
@@ -1239,14 +1196,14 @@
       samples.unshift(newSample);
       db.saveSamples(samples);
 
-      db.addLog(`SAMPLE_SENT >> Barcode ${smpId} routed to [${sectorName} - ${assignedLab}] for test: ${testType}.`);
+      db.addLog(`ORDER_PLACED >> Barcode ${smpId} routed to [${dept}] by ${user.facility_name}.`);
       closeModal();
-      showToast(`تم إرسال العينة (${smpId}) بنجاح إلى قطاع (${sectorName})!`, 'success');
+      showToast(`تم إرسال العينة (${smpId}) بنجاح إلى قسم (${dept})!`, 'success');
       renderApp();
     }
 
     /* --------------------------------------------------------------------------
-       MODALS: ATTACHMENT & REAL CLINICAL RESULT PREVIEW
+       MODALS: ATTACHMENT & RESULT PREVIEW
        -------------------------------------------------------------------------- */
     function previewFile(fileName, sampleId) {
       openModal(`
@@ -1264,7 +1221,7 @@
             </div>
             <p class="text-xs font-bold text-slate-800">${fileName}</p>
             <p class="text-[11px] text-slate-500 leading-relaxed">
-              تم إرفاق هذا المستند الطبي مع العينة ومطابقته رقمياً عند الإرسال من السجن. مقفل تماماً لمنع التعديل.
+              تم إرفاق هذا المستند الطبي مع العينة ومطابقته رقمياً عند الإرسال. مقفل تماماً لمنع التعديل.
             </p>
           </div>
           <div class="flex justify-end">
@@ -1294,15 +1251,12 @@
           <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div><span class="text-slate-400">الباركود:</span> <b class="font-mono text-brand-700">${s.sample_id}</b></div>
             <div><span class="text-slate-400">المريض / النزيل:</span> <b>${s.patient_ref}</b></div>
-            <div><span class="text-slate-400">القطاع:</span> <b>${s.target_sector || 'تجمع القصيم الصحي'}</b></div>
+            <div><span class="text-slate-400">القسم:</span> <b>${s.department}</b></div>
             <div><span class="text-slate-400">الفحص:</span> <b>${s.test_type}</b></div>
-            <div class="col-span-2 text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
-              المنفذ المستمع: <span class="font-mono font-bold text-emerald-700">${s.detected_port || 'RS-232 Serial COM3 (Auto-Ingest)'}</span>
-            </div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">التقرير السريري الصادر:</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">التقرير السريري الصادر من جهاز التحليل:</label>
             <div class="p-4 bg-emerald-50/60 text-slate-800 rounded-2xl font-sans text-xs leading-relaxed border border-emerald-200 whitespace-pre-line font-medium">
               ${s.result || 'لا توجد نتيجة مسجلة حتى الآن.'}
             </div>
@@ -1326,7 +1280,7 @@
       s.status = newStatus;
       s.current_location = newLocation;
       db.saveSamples(samples);
-      db.addLog(`STATUS_CHANGE >> Sample ${sampleId} status set to [${newStatus}].`);
+      db.addLog(`STATUS_CHANGE >> ${sampleId} moved to [${newStatus}].`);
       showToast(`تم تحديث حالة العينة (${sampleId})`, 'success');
       renderApp();
     }

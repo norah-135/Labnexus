@@ -43,9 +43,9 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Header -->
+  <!-- Top Global Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
       <div class="flex items-center gap-3">
         <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-sm flex items-center justify-center">
           <i data-lucide="network" class="w-6 h-6"></i>
@@ -53,10 +53,23 @@
         <div>
           <div class="flex items-center gap-2">
             <span class="text-xl font-extrabold tracking-tight text-slate-900">LabNexus</span>
-            <span class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-md border border-brand-100">بوابة الربط المخبري الموحد</span>
+            <span class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-md border border-brand-100">بوابة الربط الموحد</span>
           </div>
           <p class="text-xs text-slate-400 hidden sm:block">ربط عيادات السجون والمستوصفات مع مستشفى بريدة المركزي</p>
         </div>
+      </div>
+
+      <!-- Live Role Switcher (شريط التبديل المباشر بين الشاشات في أي وقت) -->
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold">
+        <button onclick="demoLogin('specialist')" id="nav-btn-spec" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
+          المستشفى المركزي
+        </button>
+        <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
+          عيادات السجن
+        </button>
+        <button onclick="demoLogin('clinic_sender')" id="nav-btn-clinic" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
+          المستوصف (رقيم)
+        </button>
       </div>
 
       <!-- User Session Controls -->
@@ -345,7 +358,7 @@
     }
 
     /* ==========================================================================
-       3. MANUAL TEMPLATE REGISTRY
+       3. MANUAL TEMPLATES REGISTRY
        ========================================================================== */
 
     function getManualTestType(testType) {
@@ -1123,7 +1136,7 @@
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-1">معرف النزيل أو المريض</label>
-                <input id="new-pat-ref" type="text" placeholder="مثال: نزيل - 7810" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
+                <input id="new-pat-ref" type="text" placeholder="مثال: وافد - 7810" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
               </div>
             </div>
 
@@ -1386,6 +1399,29 @@
     function renderNavbar() {
       const user = db.getUser();
       const slot = document.getElementById('nav-user-slot');
+
+      // تحديث أزرار التنقل النشطة في الهيدر
+      const btnSpec = document.getElementById('nav-btn-spec');
+      const btnPrison = document.getElementById('nav-btn-prison');
+      const btnClinic = document.getElementById('nav-btn-clinic');
+
+      const resetBtns = () => {
+        if (btnSpec) btnSpec.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
+        if (btnPrison) btnPrison.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
+        if (btnClinic) btnClinic.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
+      };
+
+      resetBtns();
+
+      if (user) {
+        if (user.role === 'specialist' && btnSpec) {
+          btnSpec.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
+        } else if (user.facility_name.includes("سجن") && btnPrison) {
+          btnPrison.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
+        } else if (btnClinic) {
+          btnClinic.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
+        }
+      }
 
       if (!user) {
         slot.innerHTML = `

@@ -138,24 +138,71 @@
       { id: "fac-4", name: CLINIC_NAME, type: "مستوصف / مجمع عيادات", city: "بريدة", isClaimed: true, owner: "د. فهد المشيقح" }
     ];
 
-    const DR0006_AVAILABLE_TESTS = [
-      { id: "ast", name: "GOT (AST)", cat: "Liver" },
-      { id: "alt", name: "GPT (ALT)", cat: "Liver" },
-      { id: "alk", name: "ALK. PHOSPHATASE", cat: "Liver" },
-      { id: "alb", name: "ALBUMIN", cat: "Liver" },
-      { id: "tp", name: "T. PROTEIN", cat: "Liver" },
-      { id: "bili", name: "BILIRUBIN (Total)", cat: "Liver" },
-      { id: "dir_bili", name: "DIRECT BILIRUBIN", cat: "Liver" },
-      { id: "chol", name: "CHOLESTEROL", cat: "Lipids" },
-      { id: "tg", name: "TG (Triglycerides)", cat: "Lipids" },
-      { id: "hdl", name: "HDL", cat: "Lipids" },
-      { id: "na", name: "SODIUM (Na+)", cat: "Electrolytes" },
-      { id: "k", name: "POTASSIUM (K+)", cat: "Electrolytes" },
-      { id: "cl", name: "CHLORIDE (Cl-)", cat: "Electrolytes" },
-      { id: "ca", name: "CALCIUM", cat: "Electrolytes" },
-      { id: "urea", name: "UREA", cat: "Renal" },
-      { id: "creat", name: "CREATININE", cat: "Renal" },
-      { id: "cbc_opt", name: "CBC (تحليل دم شامل)", cat: "Hematology" }
+    // الهيكلة الجديدة للاستمارة المطابقة للورقة المرفقة
+    const DR0006_FORM_STRUCTURE = [
+      {
+        col: 1, // العمود الأول (يسار الورقة)
+        categories: [
+          {
+            id: "biochem", name: "BIOCHEMISTRY",
+            tests: ["GLU (F,R,PP)", "UREA", "CR", "CK-MB", "SGOT (AST)", "SGPT", "ALK. PHOSPHATASE", "ALBUMIN", "T.PROTEIN", "BILIRUBIN", "CHOL", "TG", "HDL", "LDL", "SODIUM", "POTASSIUM", "CHLORIDE", "URIC ACID", "CREATININE", "CALCIUM", "PHOSPHORUS", "LITHIUM", "ALB/CR RATIO (URINE)"]
+          }
+        ]
+      },
+      {
+        col: 2, // العمود الثاني (الوسط)
+        categories: [
+          {
+            id: "hema", name: "HEMATOLOGY",
+            tests: ["CBC", "BLOOD GROUP", "HB A1C", "SICKLING TEST", "PROTHROMBIN TIME (PT/INR)", "ESR"]
+          },
+          {
+            id: "urine", name: "URINE ANALYSIS",
+            tests: ["CHEMICAL", "MICROSCOPIC"]
+          },
+          {
+            id: "stool", name: "STOOL ANALYSIS",
+            tests: ["STOOL OVA & PARASITES"]
+          },
+          {
+            id: "micro", name: "MICROBIOLOGY CULTURE",
+            tests: ["Blood", "Urine", "Stool", "C.S.F", "Tissue Swab", "Wound Swab", "Sputum", "Nasal", "Semen", "Fluid"]
+          },
+          {
+            id: "vit", name: "VITAMINS & OTHERS",
+            tests: ["HEMOGLOBIN ELECTROPHORESIS", "VITAMIN D LEVEL"]
+          },
+          {
+            id: "iron", name: "IRON PROFILE",
+            tests: ["SERUM IRON", "FERRITIN"]
+          }
+        ]
+      },
+      {
+        col: 3, // العمود الثالث (يمين الورقة)
+        categories: [
+          {
+            id: "virology", name: "VIROLOGY",
+            tests: ["ANTI-HCV (Ab)", "HBs Ag", "ANTI-HBs", "ANTI-HIV", "HBe Ag / Ab"]
+          },
+          {
+            id: "hormone", name: "HORMONE PROFILE",
+            tests: ["TSH", "FT4", "FT3", "FSH", "LH", "PRL", "TESTOSTERONE", "ESTRADIOL", "PROGESTERONE", "CORTISOL", "ALDOSTERONE"]
+          },
+          {
+            id: "preg", name: "PREGNANCY TEST",
+            tests: ["URINE HCG", "BLOOD HCG"]
+          },
+          {
+            id: "psa", name: "PROSTATE SPECIFIC ANTIGEN",
+            tests: ["TOTAL PSA", "FREE PSA"]
+          },
+          {
+            id: "other", name: "OTHER TESTS",
+            tests: ["OTHER"]
+          }
+        ]
+      }
     ];
 
     const INITIAL_REAGENTS = [
@@ -177,13 +224,13 @@
         department: "Chemistry",
         test_type: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)",
         is_manual: false,
-        selected_tests: ["ast", "alt", "alk", "alb", "tp", "bili", "dir_bili", "chol", "tg", "hdl", "na", "k", "cl", "ca", "urea", "creat"],
+        selected_tests: ["SGOT (AST)", "SGPT", "ALK. PHOSPHATASE", "ALBUMIN", "T.PROTEIN", "BILIRUBIN", "CHOL", "TG", "HDL", "SODIUM", "POTASSIUM", "CHLORIDE", "CALCIUM", "UREA", "CREATININE", "CBC"],
         sender_facility: REHAB_NAME,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
         current_location: "مختبر الاستقبال - مستشفى بريدة",
         status: "Received",
         created_at: "2026-09-08 08:30",
-        notes: "تم إدراج العينة من نموذج الإحالة الورقي DR-0006 وتشمل 16 فحصاً في الكيمياء والأملاح",
+        notes: "تم إدراج العينة من نموذج الإحالة الورقي DR-0006 وتشمل الفحوصات المحددة",
         attachment_name: "استمارة_إحالة_DR0006.pdf",
         result: null,
         structured_data: null
@@ -579,7 +626,7 @@
                   <tr>
                     <td class="border border-slate-300 p-2 font-bold">Isolate 2</td>
                     <td class="border border-slate-300 p-2"><input id="cw_iso2_org" type="text" placeholder="None" class="w-full"></td>
-                    <td class="border border-slate-300 p-2"><input id="cw_iso2_key" type="text" placeholder="---" class="w-full"></td>
+                    <td class="border border-slate-300 p-2"><input id="cw_iso2_key" type="text placeholder="---" class="w-full"></td>
                   </tr>
                   <tr>
                     <td class="border border-slate-300 p-2 font-semibold">Additional test</td>
@@ -1133,50 +1180,41 @@
     /* ==========================================================================
        5. MODAL: DR-0006 INTERACTIVE SHEET VIEW
        ========================================================================== */
-    function viewDr0006Sheet(sampleId) {
-      const s = db.getSamples().find(item => item.sample_id === sampleId);
-      if (!s) return;
-      const selected = s.selected_tests || [];
+       function viewDr0006Sheet(sampleId) {
+        const s = db.getSamples().find(item => item.sample_id === sampleId);
+        if (!s) return;
+        const selected = s.selected_tests || [];
 
-      openModal(`
-        <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">DR-0006 Requisition Sheet</span>
-                <h3 class="font-extrabold text-slate-900 text-sm">استمارة طلب تحاليل الدم الإلكترونية</h3>
+        openModal(`
+          <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">DR-0006 Requisition Sheet</span>
+                  <h3 class="font-extrabold text-slate-900 text-sm">استمارة طلب تحاليل الدم الإلكترونية</h3>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">المستفيد: <b>${s.patient_ref}</b> | الفحوصات المحددة: <b class="text-brand-600">${selected.length}</b></p>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">المستفيد: <b>${s.patient_ref}</b> | الباركود: <b>${s.sample_id}</b></p>
+              <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
 
-          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-            <h4 class="font-bold text-slate-800 text-xs mb-3 border-b border-slate-200 pb-1.5 flex items-center justify-between">
-              <span>الفحوصات المحددة في هذه الاستمارة:</span>
-              <span class="text-brand-600 text-xs">${selected.length} فحص مؤشر عليه</span>
-            </h4>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-              ${DR0006_AVAILABLE_TESTS.map(t => {
-                const isChecked = selected.includes(t.id);
-                return `
-                  <div class="p-2.5 rounded-xl border flex items-center justify-between ${isChecked ? 'bg-blue-50 border-blue-200 text-blue-900 font-bold' : 'bg-white border-slate-100 text-slate-400 opacity-60'}">
-                    <span>${t.name}</span>
-                    <span class="text-xs">${isChecked ? '✓' : '—'}</span>
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs" dir="ltr">
+                ${selected.map(test => `
+                  <div class="p-2 rounded-lg border bg-white border-blue-200 text-blue-900 font-bold flex items-center gap-2 shadow-sm">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-blue-600"></i>
+                    <span>${test}</span>
                   </div>
-                `;
-              }).join('')}
+                `).join('')}
+              </div>
+            </div>
+            <div class="flex justify-end pt-2">
+              <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">إغلاق</button>
             </div>
           </div>
-
-          <div class="flex justify-end items-center pt-2 border-t border-slate-100 text-[11px]">
-            <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">إغلاق</button>
-          </div>
-        </div>
-      `);
-      lucide.createIcons();
-    }
+        `);
+        lucide.createIcons();
+      }
 
     /* ==========================================================================
        6. DASHBOARD: SPECIALIST
@@ -1569,6 +1607,12 @@
       `;
     }
 
+    function toggleDrCategory(catId, isChecked) {
+      document.querySelectorAll(`input[data-cat="${catId}"]`).forEach(cb => {
+        cb.checked = isChecked;
+      });
+    }
+
     /* --------------------------------------------------------------------------
        MODAL: SEND NEW SAMPLE
        -------------------------------------------------------------------------- */
@@ -1618,25 +1662,37 @@
               </select>
             </div>
 
-            <!-- تفريغ استمارة DR-0006 التفاعلية إذا تم اختيارها -->
-            <div id="dr0006-checklist-container" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                <div>
-                  <span class="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
-                    <i data-lucide="check-square" class="w-4 h-4 text-brand-600"></i>
-                    تحديد تحاليل الدم المطلوبة بالاستمارة (DR-0006 Checklist)
-                  </span>
-                  <p class="text-[10px] text-slate-500 mt-0.5">حددي التحاليل المطلوبة لهذا المريض مباشرة وسيتم حصرها مع الطلب</p>
-                </div>
-                <button type="button" onclick="selectAllDrTests(true)" class="text-[10px] text-brand-600 hover:underline font-bold">تحديد الكل</button>
+            <!-- استمارة DR-0006 المطابقة للورقة -->
+            <div id="dr0006-checklist-container" class="hidden bg-slate-50 border border-slate-300 rounded-xl p-4 space-y-3">
+              <div class="border-b border-slate-300 pb-2">
+                <span class="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                  <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
+                  نموذج الفحوصات الشاملة (DR-0006)
+                </span>
+                <p class="text-[10px] text-slate-500 mt-0.5">اضغط على اسم القسم لتحديد كافة التحاليل التابعة له، أو اختر يدوياً.</p>
               </div>
 
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                ${DR0006_AVAILABLE_TESTS.map(t => `
-                  <label class="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-brand-400 transition">
-                    <input type="checkbox" name="dr_test_box" value="${t.id}" class="accent-brand-600 w-3.5 h-3.5" checked>
-                    <span class="font-semibold text-slate-700">${t.name}</span>
-                  </label>
+              <!-- تقسيم الأعمدة الثلاثة -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]" dir="ltr">
+                ${DR0006_FORM_STRUCTURE.map(col => `
+                  <div class="space-y-4">
+                    ${col.categories.map(cat => `
+                      <div class="border border-slate-200 bg-white rounded-md overflow-hidden shadow-sm">
+                        <label class="font-bold text-slate-800 bg-slate-100 flex items-center gap-2 px-2 py-1.5 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition">
+                          <input type="checkbox" onclick="toggleDrCategory('${cat.id}', this.checked)" class="accent-brand-600 w-3.5 h-3.5">
+                          ${cat.name}
+                        </label>
+                        <div class="p-2 space-y-1.5 bg-white max-h-60 overflow-y-auto">
+                          ${cat.tests.map(test => `
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-700 transition">
+                              <input type="checkbox" name="dr_test_box" data-cat="${cat.id}" value="${test}" class="accent-brand-600 w-3.5 h-3.5">
+                              <span class="font-semibold text-slate-600">${test}</span>
+                            </label>
+                          `).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
                 `).join('')}
               </div>
             </div>

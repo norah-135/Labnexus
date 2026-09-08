@@ -47,5 +47,5 @@ def send_test_sample(barcode):
 
 if __name__ == '__main__':
     # يمكنك تمرير الباركود من سطر الأوامر أو الإرسال الافتراضي للعينة المعلقة
-    target_barcode = sys.argv[1] if len(sys.argv) > 1 else "SMP-BRY-101"
+    target_barcode = sys.argv[1] if len(sys.argv) > 1 else "SMP-RHB-7578"
     send_test_sample(target_barcode)

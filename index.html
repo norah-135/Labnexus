@@ -105,9 +105,9 @@
         <button onclick="switchAppTab('records')" id="tab-btn-records" class="w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50">
           <div class="flex items-center gap-2.5">
             <i data-lucide="archive" class="w-4 h-4"></i>
-            <span>السجلات ومواقع العينات</span>
+            <span id="sidebar-records-label">السجلات ومواقع العينات</span>
           </div>
-          <span id="sidebar-sample-badge" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600">0</span>
+          <span id="sidebar-sample-badge" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-mono font-bold">0</span>
         </button>
       </aside>
 
@@ -334,17 +334,20 @@
       }
     ];
 
-    let currentAppTab = "home"; // 'home' or 'records'
+    let currentAppTab = "home";
     let recordsSearchQuery = "";
     let recordsFacilityFilter = "All";
     let recordsDeptFilter = "All";
     let recordsStatusFilter = "All";
 
+    // تهيئة البيانات والتحقق من سلامة التهيئة
     function initDatabase() {
-      if (!localStorage.getItem('ln_facilities')) {
+      // إذا كانت هناك بيانات قديمة من إصدار سابق، نحدث المراكز والعينات لضمان ظهورها
+      const storedSamples = JSON.parse(localStorage.getItem('ln_samples') || '[]');
+      const hasRehabSample = storedSamples.some(s => s.sender_facility === REHAB_NAME);
+
+      if (!localStorage.getItem('ln_facilities') || !localStorage.getItem('ln_samples') || !hasRehabSample) {
         localStorage.setItem('ln_facilities', JSON.stringify(INITIAL_FACILITIES));
-      }
-      if (!localStorage.getItem('ln_samples')) {
         localStorage.setItem('ln_samples', JSON.stringify(INITIAL_SAMPLES));
       }
       
@@ -356,7 +359,7 @@
 
       if (!localStorage.getItem('ln_logs')) {
         localStorage.setItem('ln_logs', JSON.stringify([
-          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready. DR-0006 Interactive Sheet & All Worksheets Integrated.`
+          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready. Multi-tenant Separation Activated.`
         ]));
       }
       if (!localStorage.getItem('ln_user')) {
@@ -394,6 +397,12 @@
     function loginUser(userData) {
       db.setUser(userData);
       db.addLog(`AUTH >> Logged in: ${userData.name} (${userData.facility_name})`);
+      // تصفير الفلاتر التلقائي عند تبديل المستخدم لتجنب الشاشات البيضاء
+      recordsFacilityFilter = "All";
+      recordsDeptFilter = "All";
+      recordsStatusFilter = "All";
+      recordsSearchQuery = "";
+      currentAppTab = "home"; // العودة للرئيسية لتبدأ المنشأة بواجهتها الأساسية
       renderApp();
       showToast(`مرحباً بك: ${userData.name}`, 'info');
     }
@@ -407,6 +416,7 @@
 
     function showToast(message, type = 'info') {
       const box = document.getElementById('toast-box');
+      if (!box) return;
       const toast = document.createElement('div');
       const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800';
       
@@ -456,7 +466,7 @@
     }
 
     function resetAllData() {
-      if (confirm("هل أنت متأكد من رغبتك في تفريغ الذاكرة والبدء من جديد؟")) {
+      if (confirm("هل أنت متأكد من رغبتك في تفريغ الذاكرة وإعادة الضبط التام؟")) {
         localStorage.clear();
         location.reload();
       }
@@ -500,28 +510,26 @@
       renderApp();
     }
 
-    /* ==========================================================================
-       2. TAB NAVIGATION LOGIC (الصفحة الرئيسية / السجلات)
-       ========================================================================== */
-
     function switchAppTab(tab) {
       currentAppTab = tab;
       const btnHome = document.getElementById('tab-btn-home');
       const btnRecords = document.getElementById('tab-btn-records');
 
-      if (tab === 'home') {
-        btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
-        btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
-      } else {
-        btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
-        btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
+      if (btnHome && btnRecords) {
+        if (tab === 'home') {
+          btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
+          btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
+        } else {
+          btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
+          btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
+        }
       }
 
       renderApp();
     }
 
     /* ==========================================================================
-       3. MANUAL TEMPLATE REGISTRY
+       2. MANUAL TEMPLATES REGISTRY
        ========================================================================== */
 
     function getManualTestType(testType) {
@@ -1084,7 +1092,7 @@
     }
 
     /* ==========================================================================
-       4. ALWAYS-ON LISTENER FOR AUTOMATED ANALYZERS
+       3. ALWAYS-ON LISTENER FOR AUTOMATED ANALYZERS
        ========================================================================== */
 
     function generateRealClinicalResult(testType, patientRef) {
@@ -1185,7 +1193,7 @@
     setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       5. BATCH INJECTION (محاكاة حزم رقيم للمستوصف)
+       4. BATCH INJECTION (محاكاة حزم رقيم للمستوصف)
        ========================================================================== */
 
     function injectRqeemBatchSamples() {
@@ -1231,7 +1239,7 @@
     }
 
     /* ==========================================================================
-       6. MODAL: DR-0006 INTERACTIVE SHEET VIEW
+       5. MODAL: DR-0006 INTERACTIVE SHEET VIEW
        ========================================================================== */
     function viewDr0006Sheet(sampleId) {
       const s = db.getSamples().find(item => item.sample_id === sampleId);
@@ -1270,24 +1278,38 @@
     }
 
     /* ==========================================================================
-       7. VIEW: RECORDS & FACILITY LOGS (السجلات والمواقع مع البحث والفلترة)
+       6. VIEW: RECORDS & FACILITY LOGS (صلاحيات مخصصة: عزل عينات المراكز)
        ========================================================================== */
 
     function renderRecordsView() {
+      const user = db.getUser();
+      if (!user) return '';
+
       const allSamples = db.getSamples();
-      const facilities = db.getFacilities();
+      const allFacilities = db.getFacilities();
+
+      const isSpecialist = user.role === 'specialist';
+
+      // عزل العينات: المستشفى يرى كل شيء، باقي المراكز لا ترى إلا عيناتها
+      const accessibleSamples = isSpecialist 
+        ? allSamples 
+        : allSamples.filter(s => s.sender_facility === user.facility_name);
+
+      const accessibleFacilities = isSpecialist 
+        ? allFacilities 
+        : allFacilities.filter(f => f.name === user.facility_name);
 
       // تصفية وبحث العينات
-      let filteredSamples = allSamples.filter(s => {
-        const query = recordsSearchQuery.toLowerCase().trim();
+      let filteredSamples = accessibleSamples.filter(s => {
+        const query = (recordsSearchQuery || "").toLowerCase().trim();
         const matchesQuery = !query || 
-          s.sample_id.toLowerCase().includes(query) ||
-          s.patient_ref.toLowerCase().includes(query) ||
-          s.test_type.toLowerCase().includes(query) ||
-          s.sender_facility.toLowerCase().includes(query) ||
-          s.department.toLowerCase().includes(query);
+          (s.sample_id && s.sample_id.toLowerCase().includes(query)) ||
+          (s.patient_ref && s.patient_ref.toLowerCase().includes(query)) ||
+          (s.test_type && s.test_type.toLowerCase().includes(query)) ||
+          (s.sender_facility && s.sender_facility.toLowerCase().includes(query)) ||
+          (s.department && s.department.toLowerCase().includes(query));
 
-        const matchesFacility = recordsFacilityFilter === 'All' || s.sender_facility === recordsFacilityFilter || s.assigned_lab === recordsFacilityFilter;
+        const matchesFacility = !isSpecialist || recordsFacilityFilter === 'All' || s.sender_facility === recordsFacilityFilter || s.assigned_lab === recordsFacilityFilter;
         const matchesDept = recordsDeptFilter === 'All' || s.department === recordsDeptFilter;
         const matchesStatus = recordsStatusFilter === 'All' || s.status === recordsStatusFilter;
 
@@ -1301,27 +1323,33 @@
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2">
-                <h1 class="text-xl font-black text-slate-900">سجلات ومواقع العينات الموحدة</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">الأرشيف المركزي</span>
+                <h1 class="text-xl font-black text-slate-900">
+                  ${isSpecialist ? 'سجلات ومواقع العينات الموحدة (المركزي)' : `سجل عينات: ${user.facility_name}`}
+                </h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isSpecialist ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
+                  ${isSpecialist ? 'صلاحية الإدارة الشاملة' : 'سجلات منشأتك فقط'}
+                </span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                تتبع شحنات العينات عبر كافة المواقع والمنشآت المربوطة، مع بحث متقدم بمواصفات العينة داخل وخارج الأقسام
+                ${isSpecialist 
+                  ? 'عرض وإدارة شحنات العينات من كافة المراكز والمواقع المربوطة بمستشفى بريدة المركزي'
+                  : 'تتبع السجلات والتحاليل الخاصة بمنشأتك مع حماية تامة لسرية بيانات المراكز الأخرى'}
               </p>
             </div>
             
             <div class="text-xs font-bold text-slate-500 bg-slate-100 px-3.5 py-2 rounded-xl">
-              إجمالي السجلات: <span class="text-brand-700 font-extrabold">${allSamples.length}</span>
+              السجلات المتاحة: <span class="text-brand-700 font-extrabold">${accessibleSamples.length}</span>
             </div>
           </div>
 
           <!-- Connected Sites Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            ${facilities.map(fac => {
-              const facSamples = allSamples.filter(s => s.sender_facility === fac.name || s.assigned_lab === fac.name);
+          <div class="grid grid-cols-1 sm:grid-cols-2 ${isSpecialist ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-4">
+            ${accessibleFacilities.map(fac => {
+              const facSamples = accessibleSamples.filter(s => s.sender_facility === fac.name || s.assigned_lab === fac.name);
               const isRefLab = fac.name === PRIMARY_HOSPITAL_NAME;
 
               return `
-                <div onclick="setRecordFacilityFilter('${fac.name}')" class="bg-white p-4 rounded-2xl border cursor-pointer transition ${recordsFacilityFilter === fac.name ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200/80 hover:border-slate-300 shadow-xs'}">
+                <div ${isSpecialist ? `onclick="setRecordFacilityFilter('${fac.name}')"` : ''} class="bg-white p-4 rounded-2xl border transition ${isSpecialist ? 'cursor-pointer hover:border-slate-300 shadow-xs' : 'cursor-default'} ${recordsFacilityFilter === fac.name && isSpecialist ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200/80'}">
                   <div class="flex items-center justify-between">
                     <span class="p-2 rounded-xl ${isRefLab ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">
                       <i data-lucide="${isRefLab ? 'building-2' : 'map-pin'}" class="w-4 h-4"></i>
@@ -1337,25 +1365,27 @@
 
           <!-- Advanced Search & Filter Bar -->
           <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 ${isSpecialist ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 text-xs">
               
               <!-- Search Query Input -->
               <div class="sm:col-span-2 relative">
                 <label class="block font-bold text-slate-700 mb-1">بحث فوري بمواصفات العينة</label>
                 <div class="relative">
                   <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute top-2.5 right-3"></i>
-                  <input type="text" id="records-search-input" oninput="onRecordSearchChanged(this.value)" value="${recordsSearchQuery}" placeholder="ابحث برقم الباركود، اسم المريض، الفحص، أو الموقع..." class="w-full pr-9 pl-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
+                  <input type="text" id="records-search-input" oninput="onRecordSearchChanged(this.value)" value="${recordsSearchQuery}" placeholder="ابحث برقم الباركود، اسم المريض، الفحص..." class="w-full pr-9 pl-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
                 </div>
               </div>
 
-              <!-- Filter by Facility/Site -->
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">الموقع / المنشأة</label>
-                <select onchange="onRecordFilterFacility(this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800">
-                  <option value="All" ${recordsFacilityFilter === 'All' ? 'selected' : ''}>كافة المواقع</option>
-                  ${facilities.map(f => `<option value="${f.name}" ${recordsFacilityFilter === f.name ? 'selected' : ''}>${f.name}</option>`).join('')}
-                </select>
-              </div>
+              <!-- Filter by Facility/Site (فقط للمستشفى المركزي) -->
+              ${isSpecialist ? `
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">الموقع / المنشأة</label>
+                  <select onchange="onRecordFilterFacility(this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800">
+                    <option value="All" ${recordsFacilityFilter === 'All' ? 'selected' : ''}>كافة المواقع</option>
+                    ${allFacilities.map(f => `<option value="${f.name}" ${recordsFacilityFilter === f.name ? 'selected' : ''}>${f.name}</option>`).join('')}
+                  </select>
+                </div>
+              ` : ''}
 
               <!-- Filter by Department -->
               <div>
@@ -1401,16 +1431,16 @@
                   <tr>
                     <th class="p-4">الباركود</th>
                     <th class="p-4">المريض / المستفيد</th>
-                    <th class="p-4">الموقع المرسل والمستقبل</th>
+                    <th class="p-4">الجهة المرسلة</th>
                     <th class="p-4">القسم ونوع الفحص</th>
-                    <th class="p-4">الحالة الحالية والموقع</th>
+                    <th class="p-4">الحالة والموقع الحالي</th>
                     <th class="p-4">التاريخ</th>
                     <th class="p-4 text-center">التقرير</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   ${filteredSamples.length === 0 ? `
-                    <tr><td colspan="7" class="p-10 text-center text-slate-400">لا توجد عينات مطابقة لمواصفات البحث الحالية.</td></tr>
+                    <tr><td colspan="7" class="p-10 text-center text-slate-400">لا توجد عينات مسجلة تطابق معايير البحث.</td></tr>
                   ` : filteredSamples.map(s => {
                     const isDr = s.selected_tests && s.selected_tests.length > 0;
                     return `
@@ -1496,7 +1526,7 @@
     }
 
     /* ==========================================================================
-       8. DASHBOARD: SPECIALIST
+       7. DASHBOARD: SPECIALIST
        ========================================================================== */
 
     const STATUS_MAP = {
@@ -1688,7 +1718,6 @@
                           <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
                         </td>
 
-                        <!-- تعديل الحالة -->
                         <td class="p-4 text-center">
                           <div class="flex items-center justify-center gap-1.5 flex-wrap">
                             ${s.status === 'Sent' ? `
@@ -1714,7 +1743,6 @@
                           </div>
                         </td>
 
-                        <!-- النتيجة -->
                         <td class="p-4 text-center">
                           ${s.status === 'Completed' ? `
                             <button onclick="showResultModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto shadow-xs">
@@ -1751,7 +1779,7 @@
     }
 
     /* ==========================================================================
-       9. DASHBOARD: SENDER
+       8. DASHBOARD: SENDER
        ========================================================================== */
 
     function renderSenderDashboard(user) {
@@ -1892,9 +1920,6 @@
       });
     }
 
-    /* --------------------------------------------------------------------------
-       MODAL: SEND NEW SAMPLE
-       -------------------------------------------------------------------------- */
     function openNewSampleModal() {
       const user = db.getUser();
       const randomCode = 'SMP-' + (user.facility_name.includes("التأهيل") ? 'RHB-' : 'BRY-') + Math.floor(1000 + Math.random() * 9000);
@@ -1951,7 +1976,6 @@
                 <p class="text-[10px] text-slate-500 mt-0.5">اضغط على اسم القسم لتحديد كافة التحاليل التابعة له، أو اختر يدوياً.</p>
               </div>
 
-              <!-- تقسيم الأعمدة الثلاثة -->
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]" dir="ltr">
                 ${DR0006_FORM_STRUCTURE.map(col => `
                   <div class="space-y-4">
@@ -2324,8 +2348,7 @@
       renderNavbar();
       const user = db.getUser();
       const root = document.getElementById('app-root');
-      const badge = document.getElementById('sidebar-sample-badge');
-      if (badge) badge.innerText = db.getSamples().length;
+      if (!root) return;
 
       if (!user) {
         renderAuthView();
@@ -2333,10 +2356,36 @@
         return;
       }
 
+      const isSpecialist = user.role === 'specialist';
+      const userAccessibleCount = isSpecialist 
+        ? db.getSamples().length 
+        : db.getSamples().filter(s => s.sender_facility === user.facility_name).length;
+
+      const badge = document.getElementById('sidebar-sample-badge');
+      if (badge) badge.innerText = userAccessibleCount;
+
+      const recLabel = document.getElementById('sidebar-records-label');
+      if (recLabel) {
+        recLabel.innerText = isSpecialist ? "السجلات ومواقع العينات" : "سجلات وعينات المركز";
+      }
+
+      // تحديث أزرار الشريط الجانبي
+      const btnHome = document.getElementById('tab-btn-home');
+      const btnRecords = document.getElementById('tab-btn-records');
+      if (btnHome && btnRecords) {
+        if (currentAppTab === 'home') {
+          btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
+          btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
+        } else {
+          btnHome.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition text-slate-600 hover:bg-slate-50";
+          btnRecords.className = "w-full flex items-center justify-between p-3 rounded-2xl font-bold text-xs transition bg-brand-50 text-brand-700";
+        }
+      }
+
       if (currentAppTab === 'records') {
         root.innerHTML = renderRecordsView();
       } else {
-        if (user.role === 'specialist') {
+        if (isSpecialist) {
           root.innerHTML = renderSpecialistDashboard(user);
         } else {
           root.innerHTML = renderSenderDashboard(user);

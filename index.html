@@ -279,7 +279,25 @@
         notes: "تم إدراج العينة من نموذج الإحالة الورقي DR-0006 وتشمل الفحوصات المحددة",
         attachment_name: "استمارة_إحالة_DR0006.pdf",
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: "أخصائي / سلطان الحربي"
+      },
+      {
+        sample_id: "SMP-BRY-999",
+        patient_ref: "مريض داخلي - 112",
+        department: "Chemistry",
+        test_type: "تحليل دم شامل (CBC)",
+        is_manual: false,
+        sender_facility: PRIMARY_HOSPITAL_NAME,
+        assigned_lab: PRIMARY_HOSPITAL_NAME,
+        current_location: "مختبر الاستقبال - مستشفى بريدة",
+        status: "Received",
+        created_at: "2026-09-08 09:00",
+        notes: "طلب مباشر من العيادة الداخلية",
+        attachment_name: null,
+        result: null,
+        structured_data: null,
+        ordered_by: "أخصائي / صالح الحربي"
       },
       {
         sample_id: "SMP-CULT-901",
@@ -296,7 +314,8 @@
         notes: "اشتباه التهاب بكتيري حاد بالمسالك البولية، مطلوب زراعة وعزل البكتيريا وفحص الحساسية",
         attachment_name: "طلب_زراعة_بول.pdf",
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: "رائد طبيب / خالد المطيري"
       },
       {
         sample_id: "SMP-MANUAL-702",
@@ -313,7 +332,8 @@
         notes: "فحص الإقامة الدوري للعمالة الوافدة - قسم النساء",
         attachment_name: "نموذج_إحالة_فحص_عمالة.pdf",
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: "د. فهد المشيقح"
       },
       {
         sample_id: "SMP-MANUAL-701",
@@ -330,7 +350,8 @@
         notes: "تحليل سريري مجهري مطلوب متابعته مع الاستمارة",
         attachment_name: "سجل_النزيل_السريري.pdf",
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: "رائد طبيب / خالد المطيري"
       },
       {
         sample_id: "SMP-BRY-101",
@@ -346,7 +367,8 @@
         notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً",
         attachment_name: "تقرير_طبي_أولي.pdf",
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: "رائد طبيب / خالد المطيري"
       }
     ];
 
@@ -363,9 +385,6 @@
     let recordsFacilityFilter = "All";
     let recordsDeptFilter = "All";
     let recordsStatusFilter = "All";
-    
-    // حالة لوحة المستوصف
-    let clinicActiveTab = "doctor"; 
     
     // حالة لوحة المستشفى المرجعي
     let hospitalActiveTab = "specialist"; 
@@ -436,7 +455,6 @@
       recordsStatusFilter = "All";
       recordsSearchQuery = "";
       currentAppTab = "home"; 
-      clinicActiveTab = "doctor"; 
       hospitalActiveTab = "specialist";
       renderApp();
       showToast(`مرحباً بك: ${userData.name}`, 'info');
@@ -1241,7 +1259,8 @@
           created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
           notes: "حزمة رعاية أولية محقونة تلقائياً عبر نظام رقيم",
           attachment_name: null,
-          result: null
+          result: null,
+          ordered_by: "د. فهد المشيقح"
         },
         {
           sample_id: "SMP-" + Math.floor(1000 + Math.random() * 9000),
@@ -1257,7 +1276,8 @@
           created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
           notes: "فحص زراعة بول ضمن حزمة رقيم",
           attachment_name: null,
-          result: null
+          result: null,
+          ordered_by: "د. فهد المشيقح"
         }
       ];
 
@@ -1571,14 +1591,18 @@
       const reagents = db.getReagents();
 
       let samples = allSamples;
-      if (currentSelectedDept !== "All") {
+      
+      if (hospitalActiveTab === 'doctor') {
+        // الطبيب لا يرى سوى عيناته التي طلبها
+        samples = samples.filter(s => s.ordered_by === user.name);
+      } else if (currentSelectedDept !== "All") {
         samples = samples.filter(s => s.department === currentSelectedDept);
       }
       
       // العينات المكتملة تنزل للأسفل
       samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
 
-      // الفلترة الديناميكية للكواشف بناء على القسم
+      // الفلترة الديناميكية للكواشف بناء على القسم المختار
       let displayedReagents = reagents;
       if (currentSelectedDept !== "All") {
         displayedReagents = reagents.filter(r => r.dept === currentSelectedDept);
@@ -1603,8 +1627,8 @@
               </div>
               <div class="flex bg-slate-100 p-1 rounded-xl w-max">
                 <button onclick="hospitalActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
-                <button onclick="hospitalActiveTab='doctor'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('doctor')}">الطبيب</button>
-                <button onclick="hospitalActiveTab='specialist'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('specialist')}">الأخصائي</button>
+                <button onclick="hospitalActiveTab='doctor'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('doctor')}">الطبيب (العيادات)</button>
+                <button onclick="hospitalActiveTab='specialist'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('specialist')}">الأخصائي (المختبر)</button>
               </div>
             </div>
             <div class="flex flex-col items-end gap-2">
@@ -1612,7 +1636,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 مستمع الأجهزة الآلية نشط
               </span>
-              ${(hospitalActiveTab === 'manager' || hospitalActiveTab === 'doctor') ? `
+              ${(hospitalActiveTab === 'manager' || hospitalActiveTab === 'specialist') ? `
                 <button onclick="notifyHealthCluster()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition">
                   <i data-lucide="bell" class="w-3.5 h-3.5"></i> إخطار التجمع الصحي بنفاذ العينات
                 </button>
@@ -1620,46 +1644,53 @@
             </div>
           </div>
 
-          <!-- Department Selector -->
-          <div class="flex items-center gap-2 overflow-x-auto pb-1">
-            <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
-              كافة الأقسام (${allSamples.length})
-            </button>
-            ${LAB_DEPARTMENTS.map(d => `
-              <button onclick="filterByDept('${d.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === d.id ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
-                ${d.name}
-              </button>
-            `).join('')}
-          </div>
-
-          <!-- Reagent Guard Strip (Dynamic based on Dept) -->
-          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <i data-lucide="beaker" class="w-4 h-4 text-brand-600"></i>
-                <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (${currentSelectedDept === 'All' ? 'جميع الأقسام' : currentSelectedDept})</h3>
-              </div>
-              <span class="text-[11px] text-slate-400">المحلول النافذ يقفل الإرسال للجهات (صلاحية الأخصائي/المدير)</span>
+          ${hospitalActiveTab === 'doctor' ? `
+            <div class="flex items-center gap-3 mt-2 mb-2">
+              <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-4 h-4 inline"></i> طلب تحليل مخبري (أمر طبي)</button>
+              <button onclick="openBloodRequestModal()" class="bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="droplet" class="w-4 h-4 inline"></i> طلب نقل دم للمريض (Hematos)</button>
             </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              ${displayedReagents.length === 0 ? '<p class="text-xs text-slate-400 col-span-full p-2">لا توجد محاليل مسجلة لهذا القسم.</p>' : displayedReagents.map(r => `
-                <button onclick="${(hospitalActiveTab !== 'doctor') ? `toggleReagent('${r.id}')` : ''}" class="p-2.5 rounded-2xl border text-right transition flex flex-col justify-between ${
-                  r.available 
-                    ? 'bg-emerald-50/50 hover:bg-emerald-100/50 border-emerald-200 text-emerald-950' 
-                    : 'bg-rose-50 hover:bg-rose-100/60 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
-                } ${hospitalActiveTab === 'doctor' ? 'cursor-default opacity-80' : ''}">
-                  <span class="text-[11px] font-bold block leading-tight">${r.name}</span>
-                  <div class="mt-2 flex items-center justify-between text-[10px] font-extrabold">
-                    <span class="${r.available ? 'text-emerald-700' : 'text-rose-700'}">
-                      ${r.available ? '● متوفر' : '✖ نافذ'}
-                    </span>
-                    ${hospitalActiveTab !== 'doctor' ? '<span class="text-[9px] text-slate-400 font-normal">تبديل</span>' : ''}
-                  </div>
+          ` : `
+            <!-- Department Selector -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+              <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
+                كافة الأقسام (${allSamples.length})
+              </button>
+              ${LAB_DEPARTMENTS.map(d => `
+                <button onclick="filterByDept('${d.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === d.id ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
+                  ${d.name}
                 </button>
               `).join('')}
             </div>
-          </div>
+
+            <!-- Reagent Guard Strip (Dynamic based on Dept) -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="beaker" class="w-4 h-4 text-brand-600"></i>
+                  <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (${currentSelectedDept === 'All' ? 'جميع الأقسام' : currentSelectedDept})</h3>
+                </div>
+                <span class="text-[11px] text-slate-400">المحلول النافذ يقفل الإرسال للجهات تلقائياً</span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                ${displayedReagents.length === 0 ? '<p class="text-xs text-slate-400 col-span-full p-2">لا توجد محاليل مسجلة لهذا القسم.</p>' : displayedReagents.map(r => `
+                  <button onclick="toggleReagent('${r.id}')" class="p-2.5 rounded-2xl border text-right transition flex flex-col justify-between ${
+                    r.available 
+                      ? 'bg-emerald-50/50 hover:bg-emerald-100/50 border-emerald-200 text-emerald-950' 
+                      : 'bg-rose-50 hover:bg-rose-100/60 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
+                  }">
+                    <span class="text-[11px] font-bold block leading-tight">${r.name}</span>
+                    <div class="mt-2 flex items-center justify-between text-[10px] font-extrabold">
+                      <span class="${r.available ? 'text-emerald-700' : 'text-rose-700'}">
+                        ${r.available ? '● متوفر' : '✖ نافذ'}
+                      </span>
+                      <span class="text-[9px] text-slate-400 font-normal">تبديل</span>
+                    </div>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `}
 
           ${hospitalActiveTab === 'manager' ? `
             <!-- KPI Cards for Manager -->
@@ -1700,7 +1731,7 @@
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                 <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
-                <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية (قراءة فقط)' : 'قائمة عينات المختبر المرجعي (Worklist)'}</span>
+                <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر المرجعي (Worklist)'}</span>
               </h2>
               <span class="text-xs text-slate-400">العينات: ${samples.length}</span>
             </div>
@@ -1721,7 +1752,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   ${samples.length === 0 ? `
-                    <tr><td colspan="8" class="p-10 text-center text-slate-400">لا توجد عينات مسجلة.</td></tr>
+                    <tr><td colspan="${hospitalActiveTab === 'specialist' ? '8' : '7'}" class="p-10 text-center text-slate-400">لا توجد عينات.</td></tr>
                   ` : samples.map(s => {
                     const manual = s.is_manual || getManualTestType(s.test_type);
                     const isDr = s.selected_tests && s.selected_tests.length > 0;
@@ -1830,13 +1861,10 @@
        ========================================================================== */
 
     function renderSenderDashboard(user) {
-      if (user.facility_name === CLINIC_NAME) {
-        return renderClinicDashboard(user);
-      }
-
       const samples = db.getSamples().filter(s => s.sender_facility === user.facility_name);
       const isRehab = user.facility_name.includes("التأهيل");
       const isPrison = user.facility_name.includes("سجن");
+      const isClinic = user.facility_name.includes("مستوصف");
 
       samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
 
@@ -1846,8 +1874,8 @@
             <div>
               <div class="flex items-center gap-2">
                 <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isRehab ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}">
-                  ${isRehab ? 'مركز رعاية وتأهيل' : 'قطاع السجون والإصلاحيات'}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isRehab ? 'bg-purple-100 text-purple-800' : isPrison ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                  ${isRehab ? 'مركز رعاية وتأهيل' : isPrison ? 'قطاع السجون والإصلاحيات' : 'مستوصف / مجمع عيادات'}
                 </span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
@@ -1856,6 +1884,12 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
+              ${isClinic ? `
+                <button onclick="injectRqeemBatchSamples()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                  <span>حقن حزمة من (رقيم وعينتي)</span>
+                </button>
+              ` : ''}
               <button onclick="openNewSampleModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md shadow-brand-500/20">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i>
                 <span>+ تسجيل وإرسال عينة جديدة</span>
@@ -1959,84 +1993,6 @@
       `;
     }
 
-    function renderClinicDashboard(user) {
-      const allSamples = db.getSamples().filter(s => s.sender_facility === user.facility_name);
-      allSamples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
-
-      const getTabClass = (tab) => clinicActiveTab === tab ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
-
-      return `
-        <div class="space-y-6">
-          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-              <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-              <div class="flex bg-slate-100 p-1 rounded-xl">
-                <button onclick="clinicActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
-                <button onclick="clinicActiveTab='doctor'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('doctor')}">الطبيب (العيادات)</button>
-                <button onclick="clinicActiveTab='specialist'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('specialist')}">الأخصائي (المختبر)</button>
-              </div>
-            </div>
-            
-            ${clinicActiveTab === 'manager' ? `
-              <div class="grid grid-cols-3 gap-4 text-center">
-                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100"><p class="text-xs text-blue-600 font-bold">إجمالي العينات</p><p class="text-2xl font-black text-blue-900">${allSamples.length}</p></div>
-                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100"><p class="text-xs text-emerald-600 font-bold">المنجزة</p><p class="text-2xl font-black text-emerald-900">${allSamples.filter(s=>s.status==='Completed').length}</p></div>
-                <div class="p-4 bg-amber-50 rounded-xl border border-amber-100"><p class="text-xs text-amber-600 font-bold">قيد الانتظار</p><p class="text-2xl font-black text-amber-900">${allSamples.filter(s=>s.status!=='Completed').length}</p></div>
-              </div>
-            ` : clinicActiveTab === 'doctor' ? `
-              <div class="flex items-center gap-3 mb-4 flex-wrap">
-                <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm"><i data-lucide="plus-circle" class="w-3.5 h-3.5 inline"></i> طلب تحليل مخبري</button>
-                <button onclick="openBloodRequestModal()" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm"><i data-lucide="droplet" class="w-3.5 h-3.5 inline"></i> طلب كيس دم (Hematos)</button>
-              </div>
-              <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
-                <h3 class="font-bold text-slate-800 text-xs mb-2">لوحة الطبيب: توفر الفحوصات المركزية (للعلم)</h3>
-                <div class="flex flex-wrap gap-2">
-                  ${db.getReagents().map(r => `<span class="text-[10px] px-2 py-1 rounded border ${r.available ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'}">${r.name} ${r.available ? '✓' : '✖'}</span>`).join('')}
-                </div>
-              </div>
-            ` : `
-              <!-- Specialist Tab -->
-              <p class="text-xs text-slate-500 mb-4">لوحة أخصائي سحب العينات - تجهيز وإرسال للمختبر المرجعي.</p>
-              <div class="flex items-center gap-3">
-                <button onclick="injectRqeemBatchSamples()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                  <i data-lucide="layers" class="w-4 h-4"></i>
-                  <span>حقن حزمة من (رقيم وعينتي)</span>
-                </button>
-                <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm"><i data-lucide="plus-circle" class="w-3.5 h-3.5 inline"></i> سحب وإرسال عينة جديدة</button>
-              </div>
-            `}
-          </div>
-          
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="divide-y divide-slate-100">
-              ${allSamples.length === 0 ? `<div class="p-8 text-center text-slate-400 text-xs">لا توجد سجلات.</div>` : allSamples.map(s => `
-                <div class="p-5 flex items-center justify-between ${s.status === 'Completed' ? 'completed-row' : ''}">
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-mono text-brand-700 font-bold text-sm">${s.sample_id}</span>
-                      <span class="text-xs font-bold text-slate-800">${s.patient_ref}</span>
-                      ${s.status === 'Completed' ? '<span class="text-xs text-emerald-600 font-bold"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> مكتمل</span>' : ''}
-                    </div>
-                    <div class="text-xs text-slate-500 mt-1">القسم: ${s.department} | المطلوب: ${s.test_type}</div>
-                  </div>
-                  <div>
-                    ${s.status === 'Completed' ? `
-                      <button onclick="showResultModal('${s.sample_id}')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20">
-                        <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
-                        <span>عرض النتيجة</span>
-                      </button>
-                    ` : `
-                      <span class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100">${s.current_location}</span>
-                    `}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     /* ==========================================================================
        9. BLOOD BANK (HEMATOS) DASHBOARD
        ========================================================================== */
@@ -2108,6 +2064,12 @@
         showToast("تم اعتماد طلب الدم وصرف الكيس للعيادة", "success");
         renderApp();
       }
+    }
+
+    function toggleDrCategory(catId, isChecked) {
+      document.querySelectorAll(`input[data-cat="${catId}"]`).forEach(cb => {
+        cb.checked = isChecked;
+      });
     }
 
     function openNewSampleModal() {
@@ -2351,7 +2313,8 @@
         current_location: "بانتظار موافقة بنك الدم",
         status: "Sent",
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        notes: `العيادة: ${document.getElementById('bld-clinic').value} | الأولوية: ${document.getElementById('bld-priority').value}`
+        notes: `العيادة: ${document.getElementById('bld-clinic').value} | الأولوية: ${document.getElementById('bld-priority').value}`,
+        ordered_by: db.getUser().name
       };
       const samples = db.getSamples();
       samples.unshift(newSample);
@@ -2395,6 +2358,8 @@
       const attachmentName = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : (selectedTests.length ? "استمارة_إحالة_DR0006.pdf" : "مستند_إحالة_طبي.pdf");
       const manualType = getManualTestType(testType);
 
+      const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
+
       const newSample = {
         sample_id: smpId,
         patient_ref: patRef,
@@ -2405,13 +2370,14 @@
         selected_tests: selectedTests,
         sender_facility: user.facility_name,
         assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "في الطريق إلى مستشفى بريدة المركزي",
-        status: "Sent",
+        current_location: isDoctorOrdering ? "تم الطلب من العيادة الداخلية" : "في الطريق إلى مستشفى بريدة المركزي",
+        status: isDoctorOrdering ? "Received" : "Sent",
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         notes: notes || (selectedTests.length ? `تم اختيار ${selectedTests.length} فحص من استمارة DR-0006` : ''),
         attachment_name: attachmentName,
         result: null,
-        structured_data: null
+        structured_data: null,
+        ordered_by: user.name
       };
 
       const samples = db.getSamples();

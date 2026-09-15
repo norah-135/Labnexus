@@ -65,26 +65,29 @@
             <span class="text-xl font-extrabold tracking-tight text-slate-900">LabNexus</span>
             <span class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-md border border-brand-100">بوابة الربط الموحد</span>
           </div>
-          <p class="text-xs text-slate-400 hidden sm:block">ربط عيادات السجون والمستوصفات ومركز التأهيل مع مستشفى بريدة المركزي</p>
+          <p class="text-xs text-slate-400 hidden sm:block">ربط المنشآت الطبية بمستشفيات المنطقة وبنك الدم</p>
         </div>
       </div>
 
       <!-- Live Role Switcher -->
       <div class="hidden lg:flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold">
         <button onclick="demoLogin('specialist')" id="nav-btn-spec" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          المستشفى المركزي
+          المركزي
+        </button>
+        <button onclick="demoLogin('specialist2')" id="nav-btn-spec2" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
+          التخصصي
         </button>
         <button onclick="demoLogin('blood_bank')" id="nav-btn-blood" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          بنك الدم (Hematos)
+          بنك الدم
         </button>
         <button onclick="demoLogin('rehab_sender')" id="nav-btn-rehab" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          مركز التأهيل الشامل
+          مركز التأهيل
         </button>
         <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
           عيادات السجن
         </button>
         <button onclick="demoLogin('clinic_sender')" id="nav-btn-clinic" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          المستوصف (رقيم)
+          المستوصف
         </button>
       </div>
 
@@ -162,6 +165,7 @@
        ========================================================================== */
 
     const PRIMARY_HOSPITAL_NAME = "مستشفى بريدة المركزي";
+    const SPECIALIST_HOSPITAL_NAME = "مستشفى الملك فهد التخصصي";
     const REHAB_NAME = "مركز التأهيل الشامل";
     const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
     const CLINIC_NAME = "مستوصف الرعاية الأولية النموذجي";
@@ -182,7 +186,8 @@
       { id: "fac-2", name: REHAB_NAME, type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: true, owner: "أخصائي / سلطان الحربي" },
       { id: "fac-3", name: PRISON_NAME, type: "المديرية العامة للسجون", city: "بريدة", isClaimed: true, owner: "رائد طبيب / خالد المطيري" },
       { id: "fac-4", name: CLINIC_NAME, type: "مستوصف / مجمع عيادات", city: "بريدة", isClaimed: true, owner: "د. فهد المشيقح" },
-      { id: "fac-5", name: BLOOD_BANK_NAME, type: "مركز نقل الدم", city: "بريدة", isClaimed: true, owner: "أخصائي بنك الدم" } 
+      { id: "fac-5", name: BLOOD_BANK_NAME, type: "مركز نقل الدم", city: "بريدة", isClaimed: true, owner: "أخصائي بنك الدم" },
+      { id: "fac-6", name: SPECIALIST_HOSPITAL_NAME, type: "مختبر مستشفى تخصصي", city: "بريدة", isClaimed: true, owner: "د. طارق الفوزان" }
     ];
 
     const DR0006_FORM_STRUCTURE = [
@@ -325,7 +330,7 @@
         is_manual: true,
         manual_type: "worker_microbiology",
         sender_facility: CLINIC_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
+        assigned_lab: SPECIALIST_HOSPITAL_NAME, // Assigned to Specialist Hosp
         current_location: "قسم الطفيليات - وحدة فحص العمالة",
         status: "Received",
         created_at: "2026-09-07 11:45",
@@ -555,7 +560,7 @@
 
       s.status = targetStatus;
       if (targetStatus === 'Received') {
-        s.current_location = "مختبر الاستقبال - مستشفى بريدة";
+        s.current_location = "مختبر الاستقبال - " + s.assigned_lab;
       } else if (targetStatus === 'In-Testing') {
         s.current_location = "داخل القسم المختص (قيد الفحص والزرع)";
       } else if (targetStatus === 'Sent') {
@@ -571,6 +576,24 @@
     function switchAppTab(tab) {
       currentAppTab = tab;
       renderApp();
+    }
+
+    // --- نظام موزع الأحمال (Load Balancer) ---
+    function getHospitalLoad(hospitalName) {
+      const allSamples = db.getSamples();
+      const pendingSamples = allSamples.filter(s => s.assigned_lab === hospitalName && s.status !== 'Completed');
+      const count = pendingSamples.length;
+      
+      if (count <= 3) return { level: 1, text: 'إشغال منخفض', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' };
+      if (count <= 7) return { level: 2, text: 'إشغال متوسط', color: 'text-blue-700 bg-blue-50 border-blue-200', dot: 'bg-blue-500' };
+      if (count <= 12) return { level: 3, text: 'مزدحم', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' };
+      return { level: 4, text: 'مزدحم جداً', color: 'text-rose-700 bg-rose-50 border-rose-200', dot: 'bg-rose-500' };
+    }
+
+    function getLeastLoadedHospital() {
+      const load1 = db.getSamples().filter(s => s.assigned_lab === PRIMARY_HOSPITAL_NAME && s.status !== 'Completed').length;
+      const load2 = db.getSamples().filter(s => s.assigned_lab === SPECIALIST_HOSPITAL_NAME && s.status !== 'Completed').length;
+      return load1 <= load2 ? PRIMARY_HOSPITAL_NAME : SPECIALIST_HOSPITAL_NAME;
     }
 
     /* ==========================================================================
@@ -870,7 +893,7 @@
       };
 
       s.status = "Completed";
-      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - بريدة";
+      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - " + s.assigned_lab;
       s.structured_data = structured;
       s.result = `[URINE / STOOL CULTURE – WORKSHEET]
 • Final Organism: ${structured.final_organism}
@@ -1003,9 +1026,9 @@
       };
 
       s.status = "Completed";
-      s.current_location = "تم الاعتماد من قسم الطفيليات - بريدة";
+      s.current_location = "تم الاعتماد من قسم الطفيليات - " + s.assigned_lab;
       s.structured_data = structured;
-      s.result = `[تقرير فحص العمالة الوافدة - مستشفى بريدة المركزي]
+      s.result = `[تقرير فحص العمالة الوافدة - ${s.assigned_lab}]
 • Urine Pregnancy: ${structured.pregnancy.toUpperCase()}
 • Urine Glucose: ${structured.glucose.toUpperCase()}
 • Urine Parasites: ${structured.urine_parasites.toUpperCase()}
@@ -1246,6 +1269,8 @@
 
     function injectRqeemBatchSamples() {
       const batchCode = "BATCH-" + Math.floor(100 + Math.random() * 900);
+      const chosenLab = getLeastLoadedHospital();
+
       const newSamples = [
         {
           sample_id: "SMP-" + Math.floor(1000 + Math.random() * 9000),
@@ -1253,7 +1278,7 @@
           department: "Chemistry",
           test_type: "وظائف كبد وكلى (LFT & RFT)",
           sender_facility: CLINIC_NAME,
-          assigned_lab: PRIMARY_HOSPITAL_NAME,
+          assigned_lab: chosenLab,
           current_location: "حزمة رقيم - في الطريق للمختبر",
           status: "Sent",
           created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
@@ -1270,7 +1295,7 @@
           is_manual: true,
           manual_type: "culture_worksheet",
           sender_facility: CLINIC_NAME,
-          assigned_lab: PRIMARY_HOSPITAL_NAME,
+          assigned_lab: chosenLab,
           current_location: "حزمة رقيم - في الطريق للمختبر",
           status: "Sent",
           created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
@@ -1283,8 +1308,8 @@
 
       const current = db.getSamples();
       db.saveSamples([...newSamples, ...current]);
-      db.addLog(`RQEEM_SYNC >> Injected batch [${batchCode}] with 2 samples from Clinic.`);
-      showToast(`تم استيراد حزمة (${batchCode}) من نظام رقيم بنجاح!`, 'success');
+      db.addLog(`RQEEM_SYNC >> Injected batch [${batchCode}] with 2 samples routed to [${chosenLab}].`);
+      showToast(`تم استيراد حزمة (${batchCode})`, 'success');
       renderApp();
     }
 
@@ -1341,7 +1366,7 @@
       const isSpecialist = user.role === 'specialist';
 
       const accessibleSamples = isSpecialist 
-        ? allSamples 
+        ? allSamples.filter(s => s.assigned_lab === user.facility_name || s.sender_facility === user.facility_name)
         : allSamples.filter(s => s.sender_facility === user.facility_name);
 
       const accessibleFacilities = isSpecialist 
@@ -1372,15 +1397,15 @@
             <div>
               <div class="flex items-center gap-2">
                 <h1 class="text-xl font-black text-slate-900">
-                  ${isSpecialist ? 'سجلات ومواقع العينات الموحدة (المركزي)' : `سجل عينات: ${user.facility_name}`}
+                  ${isSpecialist ? `سجلات العينات (${user.facility_name})` : `سجل عينات: ${user.facility_name}`}
                 </h1>
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isSpecialist ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
-                  ${isSpecialist ? 'صلاحية الإدارة الشاملة' : 'سجلات منشأتك فقط'}
+                  ${isSpecialist ? 'سجلات المستشفى' : 'سجلات منشأتك فقط'}
                 </span>
               </div>
               <p class="text-xs text-slate-500 mt-1">
                 ${isSpecialist 
-                  ? 'عرض وإدارة شحنات العينات من كافة المراكز والمواقع المربوطة بمستشفى بريدة المركزي'
+                  ? 'عرض وإدارة الشحنات الواردة للمستشفى الخاص بك من كافة المراكز والمواقع المربوطة'
                   : 'تتبع السجلات والتحاليل الخاصة بمنشأتك مع حماية تامة لسرية بيانات المراكز الأخرى'}
               </p>
             </div>
@@ -1394,7 +1419,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 ${isSpecialist ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-4">
             ${accessibleFacilities.map(fac => {
               const facSamples = accessibleSamples.filter(s => s.sender_facility === fac.name || s.assigned_lab === fac.name);
-              const isRefLab = fac.name === PRIMARY_HOSPITAL_NAME;
+              const isRefLab = fac.type.includes("مرجعي") || fac.type.includes("تخصصي");
 
               return `
                 <div ${isSpecialist ? `onclick="setRecordFacilityFilter('${fac.name}')"` : ''} class="bg-white p-4 rounded-2xl border transition ${isSpecialist ? 'cursor-pointer hover:border-slate-300 shadow-xs' : 'cursor-default'} ${recordsFacilityFilter === fac.name && isSpecialist ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200/80'}">
@@ -1590,8 +1615,11 @@
       const allSamples = db.getSamples();
       const reagents = db.getReagents();
 
-      let samples = allSamples;
+      // تصفية العينات لتكون مقتصرة على المستشفى الحالي فقط
+      let hospitalSamples = allSamples.filter(s => s.assigned_lab === user.facility_name);
       
+      let samples = hospitalSamples;
+
       if (hospitalActiveTab === 'doctor') {
         // الطبيب لا يرى سوى عيناته التي طلبها
         samples = samples.filter(s => s.ordered_by === user.name);
@@ -1623,7 +1651,7 @@
             <div>
               <div class="flex items-center gap-2 mb-3">
                 <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">المختبر المرجعي الإقليمي</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">إدارة المستشفى والمختبرات</span>
               </div>
               <div class="flex bg-slate-100 p-1 rounded-xl w-max">
                 <button onclick="hospitalActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
@@ -1646,16 +1674,16 @@
 
           ${hospitalActiveTab === 'doctor' ? `
             <div class="flex items-center gap-3 mt-2 mb-2">
-              <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-4 h-4 inline"></i> طلب تحليل مخبري (أمر طبي)</button>
+              <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-4 h-4 inline"></i> طلب تحليل مخبري للمريض</button>
               <button onclick="openBloodRequestModal()" class="bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="droplet" class="w-4 h-4 inline"></i> طلب نقل دم للمريض (Hematos)</button>
             </div>
           ` : `
             <!-- Department Selector -->
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
               <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
-                كافة الأقسام (${allSamples.length})
+                كافة الأقسام (${hospitalSamples.length})
               </button>
-              ${LAB_DEPARTMENTS.map(d => `
+              ${LAB_DEPARTMENTS.filter(d => d.id !== 'BloodBank').map(d => `
                 <button onclick="filterByDept('${d.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === d.id ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
                   ${d.name}
                 </button>
@@ -1731,7 +1759,7 @@
             <div class="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                 <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
-                <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر المرجعي (Worklist)'}</span>
+                <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر الداخلي (Worklist)'}</span>
               </h2>
               <span class="text-xs text-slate-400">العينات: ${samples.length}</span>
             </div>
@@ -1752,7 +1780,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   ${samples.length === 0 ? `
-                    <tr><td colspan="${hospitalActiveTab === 'specialist' ? '8' : '7'}" class="p-10 text-center text-slate-400">لا توجد عينات.</td></tr>
+                    <tr><td colspan="${hospitalActiveTab === 'specialist' ? '8' : '7'}" class="p-10 text-center text-slate-400">لا توجد عينات مطابقة.</td></tr>
                   ` : samples.map(s => {
                     const manual = s.is_manual || getManualTestType(s.test_type);
                     const isDr = s.selected_tests && s.selected_tests.length > 0;
@@ -1857,7 +1885,7 @@
     }
 
     /* ==========================================================================
-       8. DASHBOARD: SENDER (CLINICS, REHAB, PRISON)
+       8. DASHBOARD: SENDER (CLINICS, REHAB, PRISON) & LOAD BALANCER
        ========================================================================== */
 
     function renderSenderDashboard(user) {
@@ -1867,6 +1895,10 @@
       const isClinic = user.facility_name.includes("مستوصف");
 
       samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
+
+      // حساب الأحمال الحية
+      const load1 = getHospitalLoad(PRIMARY_HOSPITAL_NAME);
+      const load2 = getHospitalLoad(SPECIALIST_HOSPITAL_NAME);
 
       return `
         <div class="space-y-6">
@@ -1929,7 +1961,7 @@
                         </div>
                         <div class="text-xs text-slate-700">
                           <span class="font-bold text-slate-900">الفحص المطلوب:</span> ${s.test_type} | 
-                          <span class="font-bold text-slate-900">المستشفى المستقبل:</span> ${s.assigned_lab}
+                          <span class="font-bold text-slate-900">الوجهة (المستشفى):</span> ${s.assigned_lab}
                         </div>
 
                         ${s.notes ? `
@@ -2075,6 +2107,9 @@
     function openNewSampleModal() {
       const user = db.getUser();
       const randomCode = 'SMP-' + (user.facility_name.includes("التأهيل") ? 'RHB-' : 'BRY-') + Math.floor(1000 + Math.random() * 9000);
+      
+      const load1 = getHospitalLoad(PRIMARY_HOSPITAL_NAME);
+      const load2 = getHospitalLoad(SPECIALIST_HOSPITAL_NAME);
 
       openModal(`
         <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -2087,6 +2122,30 @@
           </div>
 
           <form onsubmit="handleCreateSample(event)" class="space-y-3.5 text-xs">
+            
+            <!-- Load Balancer Selection -->
+            <div class="${user.role === 'specialist' ? 'hidden' : 'block'} bg-slate-50 border border-brand-200 rounded-xl p-4 space-y-2 mb-2">
+              <label class="block font-bold text-slate-800 text-xs mb-1 flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> المستشفى المرجعي المستقبل
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex flex-col items-start gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <input type="radio" name="dest_hospital" value="${PRIMARY_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5" checked>
+                    <span class="font-bold text-[11px] text-slate-800">المركزي</span>
+                  </div>
+                  <span class="text-[9px] px-2 py-0.5 rounded-lg border ${load1.color} w-full text-center">${load1.text}</span>
+                </label>
+                <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex flex-col items-start gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <input type="radio" name="dest_hospital" value="${SPECIALIST_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5">
+                    <span class="font-bold text-[11px] text-slate-800">التخصصي</span>
+                  </div>
+                  <span class="text-[9px] px-2 py-0.5 rounded-lg border ${load2.color} w-full text-center">${load2.text}</span>
+                </label>
+              </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">باركود العينة</label>
@@ -2152,14 +2211,9 @@
               <div>
                 <p class="font-extrabold text-rose-950">تنبيه: لا يمكن إرسال هذه العينة!</p>
                 <p class="text-[11px] text-rose-800 mt-0.5 leading-relaxed">
-                  محلول هذا التحليل نافذ حالياً بمستشفى بريدة المركزي. يرجى اختيار فحص آخر متاح أو التنسيق مع إدارة المختبر.
+                  محلول هذا التحليل نافذ حالياً بالمستشفى المرجعي. يرجى اختيار فحص آخر متاح أو التنسيق مع إدارة المختبر.
                 </p>
               </div>
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">المستشفى المرجعي المستقبل</label>
-              <input type="text" value="${PRIMARY_HOSPITAL_NAME}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
             </div>
 
             <div>
@@ -2187,7 +2241,7 @@
               <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
               <button type="submit" id="btn-submit-sample" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
                 <i data-lucide="send" class="w-4 h-4"></i>
-                <span>تأكيد الإرسال للقسم المختص</span>
+                <span>تأكيد الطلب / الإرسال</span>
               </button>
             </div>
           </form>
@@ -2359,6 +2413,15 @@
       const manualType = getManualTestType(testType);
 
       const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
+      
+      // جلب المستشفى المستقبل بناءً على اختيار موزع الأحمال أو تعيينه للمستشفى الحالي إذا كان طبيب داخلي
+      let assignedLab = PRIMARY_HOSPITAL_NAME;
+      if (isDoctorOrdering) {
+        assignedLab = user.facility_name;
+      } else {
+        const destRadio = document.querySelector('input[name="dest_hospital"]:checked');
+        if (destRadio) assignedLab = destRadio.value;
+      }
 
       const newSample = {
         sample_id: smpId,
@@ -2369,8 +2432,8 @@
         manual_type: manualType,
         selected_tests: selectedTests,
         sender_facility: user.facility_name,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: isDoctorOrdering ? "تم الطلب من العيادة الداخلية" : "في الطريق إلى مستشفى بريدة المركزي",
+        assigned_lab: assignedLab,
+        current_location: isDoctorOrdering ? "تم الطلب من العيادة الداخلية" : "في الطريق إلى " + assignedLab,
         status: isDoctorOrdering ? "Received" : "Sent",
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         notes: notes || (selectedTests.length ? `تم اختيار ${selectedTests.length} فحص من استمارة DR-0006` : ''),
@@ -2384,9 +2447,9 @@
       samples.unshift(newSample);
       db.saveSamples(samples);
 
-      db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${dept}].`);
+      db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${assignedLab}].`);
       closeModal();
-      showToast(`تم إرسال العينة (${smpId}) بنجاح إلى قسم (${dept})!`, 'success');
+      showToast(`تم إرسال العينة (${smpId}) بنجاح إلى (${assignedLab})!`, 'success');
       renderApp();
     }
 
@@ -2400,7 +2463,8 @@
           <h2 class="text-lg font-bold text-slate-900">تسجيل الدخول إلى LabNexus</h2>
           <p class="text-xs text-slate-500">اختر المنشأة لاستعراض دورة الربط المخبري</p>
           <div class="space-y-2 pt-2">
-            <button onclick="demoLogin('specialist')" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">دخول: مستشفى بريدة المركزي (المختبر المرجعي)</button>
+            <button onclick="demoLogin('specialist')" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">دخول: مستشفى بريدة المركزي</button>
+            <button onclick="demoLogin('specialist2')" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">دخول: مستشفى الملك فهد التخصصي</button>
             <button onclick="demoLogin('blood_bank')" class="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-xl text-xs font-bold transition">دخول: بنك الدم (Hematos)</button>
             <button onclick="demoLogin('rehab_sender')" class="w-full py-2.5 px-4 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition">دخول: مركز التأهيل الشامل</button>
             <button onclick="demoLogin('prison_sender')" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">دخول: عيادات السجن</button>
@@ -2539,6 +2603,7 @@
       const slot = document.getElementById('nav-user-slot');
 
       const btnSpec = document.getElementById('nav-btn-spec');
+      const btnSpec2 = document.getElementById('nav-btn-spec2');
       const btnBlood = document.getElementById('nav-btn-blood');
       const btnRehab = document.getElementById('nav-btn-rehab');
       const btnPrison = document.getElementById('nav-btn-prison');
@@ -2546,6 +2611,7 @@
 
       const resetBtns = () => {
         if (btnSpec) btnSpec.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
+        if (btnSpec2) btnSpec2.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
         if (btnBlood) btnBlood.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
         if (btnRehab) btnRehab.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
         if (btnPrison) btnPrison.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
@@ -2555,15 +2621,16 @@
       resetBtns();
 
       if (user) {
-        if (user.role === 'specialist' && btnSpec) {
-          btnSpec.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
+        if (user.role === 'specialist') {
+          if (user.facility_name === PRIMARY_HOSPITAL_NAME && btnSpec) btnSpec.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
+          if (user.facility_name === SPECIALIST_HOSPITAL_NAME && btnSpec2) btnSpec2.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
         } else if (user.role === 'blood_bank' && btnBlood) {
           btnBlood.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
         } else if (user.facility_name.includes("التأهيل") && btnRehab) {
           btnRehab.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
         } else if (user.facility_name.includes("سجن") && btnPrison) {
           btnPrison.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
-        } else if (btnClinic) {
+        } else if (user.facility_name.includes("مستوصف") && btnClinic) {
           btnClinic.className = "px-3 py-1.5 rounded-xl transition bg-white text-brand-700 shadow-xs";
         }
       }
@@ -2608,7 +2675,7 @@
 
       const isSpecialist = user.role === 'specialist';
       const userAccessibleCount = isSpecialist 
-        ? db.getSamples().length 
+        ? db.getSamples().filter(s => s.assigned_lab === user.facility_name || s.sender_facility === user.facility_name).length 
         : db.getSamples().filter(s => s.sender_facility === user.facility_name).length;
 
       const badge = document.getElementById('sidebar-sample-badge');
@@ -2657,6 +2724,15 @@
           role: "specialist",
           facility_id: "fac-1",
           facility_name: PRIMARY_HOSPITAL_NAME
+        });
+      } else if (type === 'specialist2') {
+        loginUser({
+          id: "usr-spec2",
+          name: "د. طارق الفوزان",
+          email: "lab.spc@labnexus.sa",
+          role: "specialist",
+          facility_id: "fac-6",
+          facility_name: SPECIALIST_HOSPITAL_NAME
         });
       } else if (type === 'rehab_sender') {
         loginUser({

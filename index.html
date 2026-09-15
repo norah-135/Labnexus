@@ -21,13 +21,8 @@
           fontFamily: { sans: ['Cairo', 'sans-serif'] },
           colors: {
             brand: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              800: '#1e40af',
-              900: '#1e3a8a',
+              50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6',
+              600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a',
             }
           }
         }
@@ -40,15 +35,11 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     /* تنسيق العينات المكتملة */
-    .completed-row {
-      opacity: 0.5;
-      filter: grayscale(80%);
-      transition: all 0.3s ease;
-    }
-    .completed-row:hover {
-      opacity: 1;
-      filter: grayscale(0%);
-    }
+    .completed-row { opacity: 0.5; filter: grayscale(80%); transition: all 0.3s ease; }
+    .completed-row:hover { opacity: 1; filter: grayscale(0%); }
+    /* تنسيق شاشة محاكي البوت */
+    .terminal-scroll::-webkit-scrollbar { width: 4px; }
+    .terminal-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 4px; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
@@ -71,24 +62,12 @@
 
       <!-- Live Role Switcher -->
       <div class="hidden lg:flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold">
-        <button onclick="demoLogin('specialist')" id="nav-btn-spec" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          المركزي
-        </button>
-        <button onclick="demoLogin('specialist2')" id="nav-btn-spec2" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          التخصصي
-        </button>
-        <button onclick="demoLogin('blood_bank')" id="nav-btn-blood" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          بنك الدم
-        </button>
-        <button onclick="demoLogin('rehab_sender')" id="nav-btn-rehab" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          مركز التأهيل
-        </button>
-        <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          عيادات السجن
-        </button>
-        <button onclick="demoLogin('clinic_sender')" id="nav-btn-clinic" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">
-          المستوصف
-        </button>
+        <button onclick="demoLogin('specialist')" id="nav-btn-spec" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">المركزي</button>
+        <button onclick="demoLogin('specialist2')" id="nav-btn-spec2" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">التخصصي</button>
+        <button onclick="demoLogin('blood_bank')" id="nav-btn-blood" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">بنك الدم</button>
+        <button onclick="demoLogin('rehab_sender')" id="nav-btn-rehab" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">مركز التأهيل</button>
+        <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">عيادات السجن</button>
+        <button onclick="demoLogin('clinic_sender')" id="nav-btn-clinic" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">المستوصف</button>
       </div>
 
       <!-- User Session Controls -->
@@ -101,7 +80,6 @@
 
   <!-- Main View Container with Sidebar Layout -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-    
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
       <!-- Right Navigation Sidebar -->
@@ -149,9 +127,7 @@
             </button>
           </div>
         </div>
-        <div id="system-logs-container" class="mt-4 font-mono text-[11px] text-slate-400 space-y-1.5 max-h-40 overflow-y-auto pl-2">
-          <!-- Populated dynamically -->
-        </div>
+        <div id="system-logs-container" class="mt-4 font-mono text-[11px] text-slate-400 space-y-1.5 max-h-40 overflow-y-auto pl-2"></div>
       </div>
     </div>
   </main>
@@ -170,6 +146,14 @@
     const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
     const CLINIC_NAME = "مستوصف الرعاية الأولية النموذجي";
     const BLOOD_BANK_NAME = "بنك الدم المركزي (Hematos)";
+
+    const STATUS_MAP = {
+      'Pending': { label: 'بانتظار البوت', color: 'bg-slate-100 text-slate-700 border-slate-300' },
+      'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+      'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+    };
 
     const LAB_DEPARTMENTS = [
       { id: "Chemistry", name: "الكيمياء الحيوية (Chemistry)" },
@@ -258,9 +242,9 @@
 
     const INITIAL_REAGENTS = [
       { id: "dr0006_blood_panel", name: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)", dept: "Chemistry", is_manual: false, available: true },
-      { id: "urine_culture", name: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", available: true },
-      { id: "expatriate_screening", name: "فحص العمالة الوافدة (Expatriate Screening)", dept: "Parasitology", is_manual: true, manual_type: "worker_microbiology", available: true },
-      { id: "semen_analysis", name: "تحليل السائل المنوي المجهري (Semen Analysis)", dept: "Parasitology", is_manual: true, manual_type: "semen", available: true },
+      { id: "urine_culture", name: "زراعة بول وحساسية مضادات", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", available: true },
+      { id: "expatriate_screening", name: "فحص العمالة الوافدة", dept: "Parasitology", is_manual: true, manual_type: "worker_microbiology", available: true },
+      { id: "semen_analysis", name: "تحليل السائل المنوي المجهري", dept: "Parasitology", is_manual: true, manual_type: "semen", available: true },
       { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", is_manual: false, available: false },
       { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", is_manual: false, available: true },
       { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", is_manual: false, available: true },
@@ -270,114 +254,25 @@
 
     const INITIAL_SAMPLES = [
       {
-        sample_id: "SMP-RHB-501",
-        patient_ref: "عبدالرحمن ناصر المنصور",
-        department: "Chemistry",
-        test_type: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)",
-        is_manual: false,
-        selected_tests: ["SGOT (AST)", "SGPT", "ALK. PHOSPHATASE", "ALBUMIN", "T.PROTEIN", "BILIRUBIN", "CHOL", "TG", "HDL", "SODIUM", "POTASSIUM", "CHLORIDE", "CALCIUM", "UREA", "CREATININE", "CBC"],
-        sender_facility: REHAB_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "مختبر الاستقبال - مستشفى بريدة",
-        status: "Received",
-        created_at: "2026-09-08 08:30",
-        notes: "تم إدراج العينة من نموذج الإحالة الورقي DR-0006 وتشمل الفحوصات المحددة",
-        attachment_name: "استمارة_إحالة_DR0006.pdf",
-        result: null,
-        structured_data: null,
-        ordered_by: "أخصائي / سلطان الحربي"
+        sample_id: "SMP-RHB-501", patient_ref: "عبدالرحمن ناصر المنصور", department: "Chemistry", test_type: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)", is_manual: false, selected_tests: ["SGOT (AST)", "SGPT", "CBC"], sender_facility: REHAB_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "مختبر الاستقبال - مستشفى بريدة", status: "Received", created_at: "2026-09-08 08:30", notes: "", attachment_name: "استمارة_إحالة_DR0006.pdf", result: null, structured_data: null, ordered_by: "أخصائي / سلطان الحربي"
       },
       {
-        sample_id: "SMP-BRY-999",
-        patient_ref: "مريض داخلي - 112",
-        department: "Chemistry",
-        test_type: "تحليل دم شامل (CBC)",
-        is_manual: false,
-        sender_facility: PRIMARY_HOSPITAL_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "مختبر الاستقبال - مستشفى بريدة",
-        status: "Received",
-        created_at: "2026-09-08 09:00",
-        notes: "طلب مباشر من العيادة الداخلية",
-        attachment_name: null,
-        result: null,
-        structured_data: null,
-        ordered_by: "أخصائي / صالح الحربي"
+        sample_id: "SMP-BRY-999", patient_ref: "مريض داخلي - 112", department: "Chemistry", test_type: "تحليل دم شامل (CBC)", is_manual: false, sender_facility: PRIMARY_HOSPITAL_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "مختبر الاستقبال - مستشفى بريدة", status: "Received", created_at: "2026-09-08 09:00", notes: "طلب مباشر من العيادة الداخلية", attachment_name: null, result: null, structured_data: null, ordered_by: "أخصائي / صالح الحربي"
       },
       {
-        sample_id: "SMP-CULT-901",
-        patient_ref: "نزيل - 6612",
-        department: "Microbiology",
-        test_type: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)",
-        is_manual: true,
-        manual_type: "culture_worksheet",
-        sender_facility: PRISON_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "حاضنة قسم الميكروبيولوجي",
-        status: "Received",
-        created_at: "2026-09-07 12:00",
-        notes: "اشتباه التهاب بكتيري حاد بالمسالك البولية، مطلوب زراعة وعزل البكتيريا وفحص الحساسية",
-        attachment_name: "طلب_زراعة_بول.pdf",
-        result: null,
-        structured_data: null,
-        ordered_by: "رائد طبيب / خالد المطيري"
+        sample_id: "SMP-CULT-901", patient_ref: "نزيل - 6612", department: "Microbiology", test_type: "زراعة بول وحساسية مضادات", is_manual: true, manual_type: "culture_worksheet", sender_facility: PRISON_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "حاضنة قسم الميكروبيولوجي", status: "Received", created_at: "2026-09-07 12:00", notes: "اشتباه التهاب بكتيري", attachment_name: "طلب_زراعة_بول.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
       },
       {
-        sample_id: "SMP-MANUAL-702",
-        patient_ref: "وافدة - 1092",
-        department: "Parasitology",
-        test_type: "فحص العمالة الوافدة (Expatriate Screening)",
-        is_manual: true,
-        manual_type: "worker_microbiology",
-        sender_facility: CLINIC_NAME,
-        assigned_lab: SPECIALIST_HOSPITAL_NAME, // Assigned to Specialist Hosp
-        current_location: "قسم الطفيليات - وحدة فحص العمالة",
-        status: "Received",
-        created_at: "2026-09-07 11:45",
-        notes: "فحص الإقامة الدوري للعمالة الوافدة - قسم النساء",
-        attachment_name: "نموذج_إحالة_فحص_عمالة.pdf",
-        result: null,
-        structured_data: null,
-        ordered_by: "د. فهد المشيقح"
+        sample_id: "SMP-MANUAL-702", patient_ref: "وافدة - 1092", department: "Parasitology", test_type: "فحص العمالة الوافدة", is_manual: true, manual_type: "worker_microbiology", sender_facility: CLINIC_NAME, assigned_lab: SPECIALIST_HOSPITAL_NAME, current_location: "قسم الطفيليات - وحدة فحص العمالة", status: "Received", created_at: "2026-09-07 11:45", notes: "فحص الإقامة الدوري للعمالة الوافدة - قسم النساء", attachment_name: "نموذج_إحالة_فحص_عمالة.pdf", result: null, structured_data: null, ordered_by: "د. فهد المشيقح"
       },
       {
-        sample_id: "SMP-MANUAL-701",
-        patient_ref: "نزيل - 9104",
-        department: "Parasitology",
-        test_type: "تحليل السائل المنوي المجهري (Semen Analysis)",
-        is_manual: true,
-        manual_type: "semen",
-        sender_facility: PRISON_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "وحدة المجهر والباراسايتولوجي",
-        status: "Received",
-        created_at: "2026-09-07 11:30",
-        notes: "تحليل سريري مجهري مطلوب متابعته مع الاستمارة",
-        attachment_name: "سجل_النزيل_السريري.pdf",
-        result: null,
-        structured_data: null,
-        ordered_by: "رائد طبيب / خالد المطيري"
+        sample_id: "SMP-MANUAL-701", patient_ref: "نزيل - 9104", department: "Parasitology", test_type: "تحليل السائل المنوي المجهري", is_manual: true, manual_type: "semen", sender_facility: PRISON_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "وحدة المجهر والباراسايتولوجي", status: "Received", created_at: "2026-09-07 11:30", notes: "تحليل سريري مجهري", attachment_name: "سجل_النزيل_السريري.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
       },
       {
-        sample_id: "SMP-BRY-101",
-        patient_ref: "نزيل - 8812",
-        department: "Chemistry",
-        test_type: "فحص السموم والمؤثرات العقلية",
-        is_manual: false,
-        sender_facility: PRISON_NAME,
-        assigned_lab: PRIMARY_HOSPITAL_NAME,
-        current_location: "في الطريق إلى المختبر",
-        status: "Sent",
-        created_at: "2026-09-07 11:20",
-        notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً",
-        attachment_name: "تقرير_طبي_أولي.pdf",
-        result: null,
-        structured_data: null,
-        ordered_by: "رائد طبيب / خالد المطيري"
+        sample_id: "SMP-BRY-101", patient_ref: "نزيل - 8812", department: "Chemistry", test_type: "فحص السموم والمؤثرات العقلية", is_manual: false, sender_facility: PRISON_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "في الطريق إلى المختبر", status: "Sent", created_at: "2026-09-07 11:20", notes: "حالة اشتباه طارئة، يرجى مطابقة العينة فوراً", attachment_name: "تقرير_طبي_أولي.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
       }
     ];
 
-    // مخزون بنك الدم (Hematos)
     const INITIAL_BLOOD_INVENTORY = [
       { type: "O+", count: 18 }, { type: "O-", count: 4 },
       { type: "A+", count: 12 }, { type: "A-", count: 2 },
@@ -391,8 +286,10 @@
     let recordsDeptFilter = "All";
     let recordsStatusFilter = "All";
     
-    // حالة لوحة المستشفى المرجعي
+    // حالة التبويب في المستشفى המرجعي
     let hospitalActiveTab = "specialist"; 
+    // فلتر (موقع القدوم) للأخصائي
+    let hospitalSenderFilter = "All";
 
     function initDatabase() {
       const storedSamples = JSON.parse(localStorage.getItem('ln_samples') || '[]');
@@ -459,6 +356,7 @@
       recordsDeptFilter = "All";
       recordsStatusFilter = "All";
       recordsSearchQuery = "";
+      hospitalSenderFilter = "All";
       currentAppTab = "home"; 
       hospitalActiveTab = "specialist";
       renderApp();
@@ -581,7 +479,8 @@
     // --- نظام موزع الأحمال (Load Balancer) ---
     function getHospitalLoad(hospitalName) {
       const allSamples = db.getSamples();
-      const pendingSamples = allSamples.filter(s => s.assigned_lab === hospitalName && s.status !== 'Completed');
+      // استثناء العينات المكتملة أو التي لا تزال بالانتظار (RPA) ولم تسند لمستشفى
+      const pendingSamples = allSamples.filter(s => s.assigned_lab === hospitalName && s.status !== 'Completed' && s.status !== 'Pending');
       const count = pendingSamples.length;
       
       if (count <= 3) return { level: 1, text: 'إشغال منخفض', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' };
@@ -591,8 +490,9 @@
     }
 
     function getLeastLoadedHospital() {
-      const load1 = db.getSamples().filter(s => s.assigned_lab === PRIMARY_HOSPITAL_NAME && s.status !== 'Completed').length;
-      const load2 = db.getSamples().filter(s => s.assigned_lab === SPECIALIST_HOSPITAL_NAME && s.status !== 'Completed').length;
+      const allSamples = db.getSamples();
+      const load1 = allSamples.filter(s => s.assigned_lab === PRIMARY_HOSPITAL_NAME && s.status !== 'Completed' && s.status !== 'Pending').length;
+      const load2 = allSamples.filter(s => s.assigned_lab === SPECIALIST_HOSPITAL_NAME && s.status !== 'Completed' && s.status !== 'Pending').length;
       return load1 <= load2 ? PRIMARY_HOSPITAL_NAME : SPECIALIST_HOSPITAL_NAME;
     }
 
@@ -1198,8 +1098,8 @@
 • Chloride (Cl-): 101 mmol/L (طبيعي: 98 - 107)
 • Calcium Total: 9.3 mg/dL (طبيعي: 8.5 - 10.5)
 
-الخلاصة: كافة المؤشرات الحيوية طبيعية وسليمة. تم قيد استهلاك الكواشف رسمياً بنظام المختبر المركزي.
-وقت التحليل: ${timeStr} | اعتماد الأخصائي: د. عبد الرحمن التويجري`;
+الخلاصة: كافة المؤشرات الحيوية طبيعية وسليمة. تم قيد استهلاك الكواشف رسمياً بنظام المختبر.
+وقت التحليل: ${timeStr}`;
       }
       else if (t.includes("cbc")) {
         return `[تقرير تحليل الدم الشامل CBC - معتمد]
@@ -1264,53 +1164,87 @@
     setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       4. BATCH INJECTION (محاكاة حزم رقيم للمستوصف)
+       4. RPA AUTOMATION INJECTION (عينتي -> LABNEXUS)
        ========================================================================== */
 
-    function injectRqeemBatchSamples() {
-      const batchCode = "BATCH-" + Math.floor(100 + Math.random() * 900);
-      const chosenLab = getLeastLoadedHospital();
+    function startRPAAutomation() {
+      const samples = db.getSamples();
+      // البحث عن العينات المعلقة بالمستوصف والتي تنتظر الروبوت
+      const pending = samples.filter(s => s.sender_facility === CLINIC_NAME && s.status === 'Pending');
 
-      const newSamples = [
-        {
-          sample_id: "SMP-" + Math.floor(1000 + Math.random() * 9000),
-          patient_ref: "مراجع - " + Math.floor(100 + Math.random() * 900),
-          department: "Chemistry",
-          test_type: "وظائف كبد وكلى (LFT & RFT)",
-          sender_facility: CLINIC_NAME,
-          assigned_lab: chosenLab,
-          current_location: "حزمة رقيم - في الطريق للمختبر",
-          status: "Sent",
-          created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          notes: "حزمة رعاية أولية محقونة تلقائياً عبر نظام رقيم",
-          attachment_name: null,
-          result: null,
-          ordered_by: "د. فهد المشيقح"
-        },
-        {
-          sample_id: "SMP-" + Math.floor(1000 + Math.random() * 9000),
-          patient_ref: "مراجع - " + Math.floor(100 + Math.random() * 900),
-          department: "Microbiology",
-          test_type: "زراعة بول وحساسية مضادات (Urine / Stool Culture - Worksheet)",
-          is_manual: true,
-          manual_type: "culture_worksheet",
-          sender_facility: CLINIC_NAME,
-          assigned_lab: chosenLab,
-          current_location: "حزمة رقيم - في الطريق للمختبر",
-          status: "Sent",
-          created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          notes: "فحص زراعة بول ضمن حزمة رقيم",
-          attachment_name: null,
-          result: null,
-          ordered_by: "د. فهد المشيقح"
+      openModal(`
+        <div class="p-6 bg-slate-900 text-slate-300 rounded-3xl overflow-hidden shadow-2xl">
+          <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="bot" class="w-5 h-5 text-emerald-400"></i>
+              <h3 class="font-bold text-white text-sm">محاكي الروبوت (RPA Bot - Einatey)</h3>
+            </div>
+            <button onclick="closeModal()" class="text-slate-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div id="rpa-terminal" class="font-mono text-xs space-y-2 h-48 overflow-y-auto pr-2 terminal-scroll">
+            <div class="text-slate-500">> جاري تهيئة البوت الذكي...</div>
+          </div>
+        </div>
+      `);
+      lucide.createIcons();
+      
+      const terminal = document.getElementById('rpa-terminal');
+      const delay = (ms) => new Promise(res => setTimeout(res, ms));
+      
+      (async () => {
+        if(pending.length === 0) {
+          await delay(800);
+          terminal.innerHTML += `<div class="text-amber-400">> لا توجد عينات بانتظار السحب في نظام المستوصف. العملية اكتملت.</div>`;
+          terminal.scrollTop = terminal.scrollHeight;
+          await delay(2000);
+          closeModal();
+          return;
         }
-      ];
 
-      const current = db.getSamples();
-      db.saveSamples([...newSamples, ...current]);
-      db.addLog(`RQEEM_SYNC >> Injected batch [${batchCode}] with 2 samples routed to [${chosenLab}].`);
-      showToast(`تم استيراد حزمة (${batchCode})`, 'success');
-      renderApp();
+        await delay(800);
+        terminal.innerHTML += `<div class="text-emerald-400">> [1/4] تم تسجيل الدخول لبوابة "عينتي" بنجاح...</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+        
+        await delay(1200);
+        terminal.innerHTML += `<div class="text-blue-400">> [2/4] جاري سحب بيانات العينات المجدولة (العدد: ${pending.length})...</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+        
+        await delay(1500);
+        terminal.innerHTML += `<div class="text-amber-400">> [3/4] جاري تحليل الأحمال عبر موزع الأحمال وتوجيه العينات للوجهة الأقل ازدحاماً...</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+
+        let h1Count = 0;
+        let h2Count = 0;
+
+        for (let i = 0; i < pending.length; i++) {
+          const s = pending[i];
+          const targetLab = getLeastLoadedHospital();
+          
+          s.assigned_lab = targetLab;
+          s.status = "Sent";
+          s.current_location = "تم السحب عبر RPA - في الطريق لـ " + targetLab;
+          
+          if(targetLab === PRIMARY_HOSPITAL_NAME) h1Count++;
+          else h2Count++;
+          
+          // حفظ بشكل لحظي حتى ينعكس التحديث على دالة حساب الحمل
+          db.saveSamples(samples);
+        }
+        
+        await delay(1200);
+        terminal.innerHTML += `<div class="text-emerald-400">> [4/4] تمت معالجة وتوجيه (${h1Count}) للمركزي و (${h2Count}) للتخصصي.</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+
+        db.addLog(`RPA_SYNC >> Successfully routed ${pending.length} pending samples from Einatey.`);
+        
+        terminal.innerHTML += `<div class="text-white font-bold bg-emerald-600/20 p-2 border border-emerald-500/30 rounded mt-2">> تمت العملية بنجاح! يتم تحديث قوائم المستشفيات...</div>`;
+        terminal.scrollTop = terminal.scrollHeight;
+        
+        await delay(1800);
+        closeModal();
+        showToast('تم سحب وتوزيع بيانات "عينتي" عبر البوت بنجاح', 'success');
+        renderApp();
+      })();
     }
 
     /* ==========================================================================
@@ -1474,7 +1408,7 @@
             <!-- Status Filter Pills -->
             <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
               <span class="text-[11px] font-bold text-slate-400">حالة العينة:</span>
-              ${['All', 'Sent', 'Received', 'In-Testing', 'Completed'].map(st => {
+              ${['All', 'Pending', 'Sent', 'Received', 'In-Testing', 'Completed'].map(st => {
                 const label = st === 'All' ? 'الكل' : STATUS_MAP[st].label;
                 const isAct = recordsStatusFilter === st;
                 return `
@@ -1602,13 +1536,6 @@
        7. DASHBOARD: SPECIALIST (HOSPITAL TABS: MANAGER, DOCTOR, SPECIALIST)
        ========================================================================== */
 
-    const STATUS_MAP = {
-      'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-      'Received': { label: 'استلمت بالمستشفى', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-      'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-      'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-    };
-
     let currentSelectedDept = "All";
 
     function renderHospitalDashboard(user) {
@@ -1616,19 +1543,31 @@
       const reagents = db.getReagents();
 
       // تصفية العينات لتكون مقتصرة على المستشفى الحالي فقط
-      let hospitalSamples = allSamples.filter(s => s.assigned_lab === user.facility_name);
+      let hospitalSamples = allSamples.filter(s => s.assigned_lab === user.facility_name && s.status !== 'Pending');
       
       let samples = hospitalSamples;
 
       if (hospitalActiveTab === 'doctor') {
         // الطبيب لا يرى سوى عيناته التي طلبها
         samples = samples.filter(s => s.ordered_by === user.name);
-      } else if (currentSelectedDept !== "All") {
-        samples = samples.filter(s => s.department === currentSelectedDept);
+      } else {
+        if (currentSelectedDept !== "All") {
+          samples = samples.filter(s => s.department === currentSelectedDept);
+        }
+        if (hospitalActiveTab === 'specialist' && hospitalSenderFilter !== "All") {
+          samples = samples.filter(s => s.sender_facility === hospitalSenderFilter);
+        }
       }
       
-      // العينات المكتملة تنزل للأسفل
-      samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
+      // الترتيب الذكي:
+      // 1. In-Testing (قيد الفحص) في الأعلى
+      // 2. Received (استلمت) 
+      // 3. Sent (في الطريق)
+      // 4. Completed (مكتمل) في الأسفل
+      samples.sort((a, b) => {
+        const weights = { 'In-Testing': 1, 'Received': 2, 'Sent': 3, 'Completed': 4 };
+        return (weights[a.status] || 5) - (weights[b.status] || 5);
+      });
 
       // الفلترة الديناميكية للكواشف بناء على القسم المختار
       let displayedReagents = reagents;
@@ -1651,7 +1590,7 @@
             <div>
               <div class="flex items-center gap-2 mb-3">
                 <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">إدارة المستشفى والمختبرات</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">${user.facility_name.includes("تخصصي") ? "مختبر المستشفى التخصصي" : "المختبر المرجعي الإقليمي"}</span>
               </div>
               <div class="flex bg-slate-100 p-1 rounded-xl w-max">
                 <button onclick="hospitalActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
@@ -1756,12 +1695,22 @@
 
           <!-- Samples Table -->
           <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
-                <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر الداخلي (Worklist)'}</span>
-              </h2>
-              <span class="text-xs text-slate-400">العينات: ${samples.length}</span>
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
+                  <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر الداخلي (Worklist)'}</span>
+                </h2>
+                <span class="text-xs text-slate-400 mt-1 block">العينات: ${samples.length}</span>
+              </div>
+              
+              <!-- فلتر موقع القدوم للأخصائي -->
+              ${hospitalActiveTab === 'specialist' ? `
+                <select onchange="hospitalSenderFilter = this.value; renderApp()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-brand-500">
+                  <option value="All">فرز حسب موقع القدوم (الكل)</option>
+                  ${Array.from(new Set(hospitalSamples.map(s => s.sender_facility))).map(f => `<option value="${f}" ${hospitalSenderFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
+                </select>
+              ` : ''}
             </div>
 
             <div class="overflow-x-auto">
@@ -1831,7 +1780,7 @@
                               ${s.status === 'Sent' ? `
                                 <button onclick="changeSampleState('${s.sample_id}', 'Received')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
                                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                  <span>تأكيد الاستلام بالمختبر</span>
+                                  <span>تأكيد الاستلام</span>
                                 </button>
                               ` : s.status === 'Received' ? `
                                 <button onclick="changeSampleState('${s.sample_id}', 'In-Testing')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
@@ -1841,7 +1790,7 @@
                               ` : s.status === 'In-Testing' ? `
                                 <button onclick="autoProcessIncomingBarcode('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
                                   <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                  <span>محاكاة إنجاز الجهاز</span>
+                                  <span>إنجاز آلي (الجهاز)</span>
                                 </button>
                               ` : `
                                 <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
@@ -1894,7 +1843,11 @@
       const isPrison = user.facility_name.includes("سجن");
       const isClinic = user.facility_name.includes("مستوصف");
 
-      samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
+      // ترتيب بحيث المكتمل ينزل تحت
+      samples.sort((a, b) => {
+        const weights = { 'In-Testing': 1, 'Received': 2, 'Pending': 3, 'Sent': 4, 'Completed': 5 };
+        return (weights[a.status] || 6) - (weights[b.status] || 6);
+      });
 
       // حساب الأحمال الحية
       const load1 = getHospitalLoad(PRIMARY_HOSPITAL_NAME);
@@ -1917,15 +1870,51 @@
 
             <div class="flex items-center gap-2 flex-wrap">
               ${isClinic ? `
-                <button onclick="injectRqeemBatchSamples()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
-                  <i data-lucide="layers" class="w-4 h-4"></i>
-                  <span>حقن حزمة من (رقيم وعينتي)</span>
+                <button onclick="startRPAAutomation()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md border border-indigo-500">
+                  <i data-lucide="bot" class="w-4 h-4"></i>
+                  <span>بدء الأتمتة (RPA عينتي)</span>
                 </button>
               ` : ''}
               <button onclick="openNewSampleModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md shadow-brand-500/20">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i>
                 <span>+ تسجيل وإرسال عينة جديدة</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Load Balancer Visualizer Widget -->
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs mb-6">
+            <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2 mb-4">
+              <i data-lucide="activity" class="w-5 h-5 text-brand-600"></i> موزع الأحمال الذكي (Live Load Balancer)
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- المستشفى الأول -->
+              <div class="border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-xs">${PRIMARY_HOSPITAL_NAME}</h3>
+                  <div class="flex gap-1 mt-2">
+                    <div class="w-3 h-3 rounded-full ${load1.level >= 1 ? load1.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load1.level >= 2 ? load1.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load1.level >= 3 ? load1.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load1.level >= 4 ? load1.dot : 'bg-slate-200'}"></div>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-3 py-1 rounded-lg border ${load1.color}">${load1.text}</span>
+              </div>
+              
+              <!-- المستشفى الثاني -->
+              <div class="border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-xs">${SPECIALIST_HOSPITAL_NAME}</h3>
+                  <div class="flex gap-1 mt-2">
+                    <div class="w-3 h-3 rounded-full ${load2.level >= 1 ? load2.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load2.level >= 2 ? load2.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load2.level >= 3 ? load2.dot : 'bg-slate-200'}"></div>
+                    <div class="w-3 h-3 rounded-full ${load2.level >= 4 ? load2.dot : 'bg-slate-200'}"></div>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-3 py-1 rounded-lg border ${load2.color}">${load2.text}</span>
+              </div>
             </div>
           </div>
 
@@ -1945,7 +1934,7 @@
               ${samples.length === 0 ? `
                 <div class="p-12 text-center text-slate-400">لا توجد عينات مسجلة حالياً لهذه الجهة. اضغط بالأعلى لإرسال عينة جديدة.</div>
               ` : samples.map(s => {
-                const curStep = s.status === 'Sent' ? 1 : s.status === 'Received' ? 2 : s.status === 'In-Testing' ? 3 : 4;
+                const curStep = s.status === 'Pending' ? 0 : s.status === 'Sent' ? 1 : s.status === 'Received' ? 2 : s.status === 'In-Testing' ? 3 : 4;
                 const steps = ["تم الإرسال", "استلام بالمستشفى", "قيد الفحص", "تم الفحص"];
                 const isDr = s.selected_tests && s.selected_tests.length > 0;
 
@@ -2110,12 +2099,13 @@
       
       const load1 = getHospitalLoad(PRIMARY_HOSPITAL_NAME);
       const load2 = getHospitalLoad(SPECIALIST_HOSPITAL_NAME);
+      const isClinic = user.facility_name.includes("مستوصف");
 
       openModal(`
         <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h3 class="font-extrabold text-slate-900 text-sm">تسجيل وإرسال عينة جديدة</h3>
+              <h3 class="font-extrabold text-slate-900 text-sm">تسجيل عينة جديدة</h3>
               <p class="text-[11px] text-slate-400">الجهة المرسلة: ${user.facility_name}</p>
             </div>
             <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -2123,10 +2113,10 @@
 
           <form onsubmit="handleCreateSample(event)" class="space-y-3.5 text-xs">
             
-            <!-- Load Balancer Selection -->
-            <div class="${user.role === 'specialist' ? 'hidden' : 'block'} bg-slate-50 border border-brand-200 rounded-xl p-4 space-y-2 mb-2">
+            <!-- Load Balancer Selection (Hidden for Clinic, Clinic uses RPA) -->
+            <div class="${(user.role === 'specialist' || isClinic) ? 'hidden' : 'block'} bg-slate-50 border border-brand-200 rounded-xl p-4 space-y-2 mb-2">
               <label class="block font-bold text-slate-800 text-xs mb-1 flex items-center gap-1.5">
-                <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> المستشفى المرجعي المستقبل
+                <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> المستشفى المرجعي المستقبل (موزع الأحمال)
               </label>
               <div class="grid grid-cols-2 gap-2">
                 <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex flex-col items-start gap-1.5">
@@ -2216,6 +2206,11 @@
               </div>
             </div>
 
+            <div class="${user.role === 'specialist' ? 'block' : 'hidden'}">
+              <label class="block font-bold text-slate-700 mb-1">المستشفى المرجعي المستقبل</label>
+              <input type="text" value="${user.facility_name}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
+            </div>
+
             <div>
               <label class="block font-bold text-slate-700 mb-1">
                 <i data-lucide="message-square-text" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i> ملاحظات سريرية
@@ -2239,9 +2234,9 @@
 
             <div class="pt-2 flex justify-end gap-2">
               <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
-              <button type="submit" id="btn-submit-sample" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
-                <i data-lucide="send" class="w-4 h-4"></i>
-                <span>تأكيد الطلب / الإرسال</span>
+              <button type="submit" id="btn-submit-sample" class="px-5 py-2 ${isClinic ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-brand-600 hover:bg-brand-700'} text-white rounded-xl font-bold shadow-md flex items-center gap-1.5">
+                <i data-lucide="${isClinic ? 'save' : 'send'}" class="w-4 h-4"></i>
+                <span>${isClinic ? 'حفظ العينة (بانتظار البوت)' : 'تأكيد الطلب / الإرسال'}</span>
               </button>
             </div>
           </form>
@@ -2413,14 +2408,24 @@
       const manualType = getManualTestType(testType);
 
       const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
-      
-      // جلب المستشفى المستقبل بناءً على اختيار موزع الأحمال أو تعيينه للمستشفى الحالي إذا كان طبيب داخلي
+      const isClinic = user.facility_name.includes("مستوصف");
+
       let assignedLab = PRIMARY_HOSPITAL_NAME;
+      let initStatus = "Sent";
+      let initLocation = "في الطريق إلى " + assignedLab;
+
       if (isDoctorOrdering) {
         assignedLab = user.facility_name;
+        initStatus = "Received";
+        initLocation = "تم الطلب من العيادة الداخلية";
+      } else if (isClinic) {
+        assignedLab = "غير محدد (بانتظار RPA)";
+        initStatus = "Pending";
+        initLocation = "في المستوصف - بانتظار سحب البوت";
       } else {
         const destRadio = document.querySelector('input[name="dest_hospital"]:checked');
         if (destRadio) assignedLab = destRadio.value;
+        initLocation = "في الطريق إلى " + assignedLab;
       }
 
       const newSample = {
@@ -2433,8 +2438,8 @@
         selected_tests: selectedTests,
         sender_facility: user.facility_name,
         assigned_lab: assignedLab,
-        current_location: isDoctorOrdering ? "تم الطلب من العيادة الداخلية" : "في الطريق إلى " + assignedLab,
-        status: isDoctorOrdering ? "Received" : "Sent",
+        current_location: initLocation,
+        status: initStatus,
         created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
         notes: notes || (selectedTests.length ? `تم اختيار ${selectedTests.length} فحص من استمارة DR-0006` : ''),
         attachment_name: attachmentName,
@@ -2447,9 +2452,15 @@
       samples.unshift(newSample);
       db.saveSamples(samples);
 
-      db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${assignedLab}].`);
+      if (isClinic) {
+        db.addLog(`ORDER_PLACED >> Barcode ${smpId} queued at Clinic for RPA pickup.`);
+        showToast(`تم حفظ العينة (${smpId}) وهي بانتظار الأتمتة (RPA)!`, 'success');
+      } else {
+        db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${assignedLab}].`);
+        showToast(`تم إرسال العينة (${smpId}) بنجاح إلى (${assignedLab})!`, 'success');
+      }
+      
       closeModal();
-      showToast(`تم إرسال العينة (${smpId}) بنجاح إلى (${assignedLab})!`, 'success');
       renderApp();
     }
 

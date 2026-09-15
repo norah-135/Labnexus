@@ -41,7 +41,7 @@
     .terminal-scroll::-webkit-scrollbar { width: 4px; }
     .terminal-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 4px; }
     /* LIS Table styles */
-    .lis-table th { background: #1e293b; color: #cbd5e1; font-weight: 600; padding: 12px; text-align: right; }
+    .lis-table th { background: #1e293b; color: #cbd5e1; font-weight: 600; padding: 12px; }
     .lis-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
   </style>
 </head>
@@ -59,7 +59,7 @@
             <span class="text-xl font-extrabold tracking-tight text-slate-900">LabNexus</span>
             <span class="text-[10px] bg-brand-50 text-brand-700 font-bold px-2 py-0.5 rounded-md border border-brand-100">بوابة الربط الموحد</span>
           </div>
-          <p class="text-xs text-slate-400 hidden sm:block">ربط المنشآت الطبية بمستشفيات المنطقة ونظام LIS</p>
+          <p class="text-xs text-slate-400 hidden sm:block">منصة الربط المخبري ومزامنة LIS</p>
         </div>
       </div>
 
@@ -68,20 +68,27 @@
         <button onclick="demoLogin('specialist')" id="nav-btn-spec" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">المركزي</button>
         <button onclick="demoLogin('specialist2')" id="nav-btn-spec2" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">التخصصي</button>
         <button onclick="demoLogin('blood_bank')" id="nav-btn-blood" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">بنك الدم</button>
-        <button onclick="demoLogin('rehab_sender')" id="nav-btn-rehab" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">مركز التأهيل</button>
-        <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">عيادات السجن</button>
-        <button onclick="demoLogin('lis_sender')" id="nav-btn-lis" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">نظام LIS</button>
+        <button onclick="demoLogin('rehab_sender')" id="nav-btn-rehab" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">التأهيل</button>
+        <button onclick="demoLogin('prison_sender')" id="nav-btn-prison" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">السجن</button>
+        <button onclick="demoLogin('lis_node')" id="nav-btn-lis" class="px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900">نظام LIS</button>
       </div>
 
       <!-- User Session Controls -->
-      <div id="nav-user-slot" class="flex items-center gap-3"></div>
+      <div class="flex items-center gap-3">
+        <!-- زر اختصار لعرض السجلات للمسؤولين -->
+        <button onclick="switchAppTab(currentAppTab === 'records' ? 'home' : 'records')" class="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-brand-50 hover:text-brand-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span class="hidden sm:inline" id="top-records-btn">سجلات العينات</span>
+        </button>
+        <div id="nav-user-slot" class="flex items-center gap-3 border-r border-slate-200 pr-3"></div>
+      </div>
     </div>
   </header>
 
   <!-- Notification Toast Container -->
   <div id="toast-box" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- Main View Container with Sidebar Layout -->
+  <!-- Main View Container -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
@@ -124,13 +131,13 @@
     const SPECIALIST_HOSPITAL_NAME = "مستشفى الملك فهد التخصصي";
     const REHAB_NAME = "مركز التأهيل الشامل";
     const PRISON_NAME = "إدارة سجن بريدة - العيادات الطبية";
-    const LIS_NAME = "نظام إدارة المختبرات (LIS)"; // تم التغيير من المستوصف إلى LIS
+    const LIS_NAME = "نظام إدارة المختبرات (LIS)";
     const BLOOD_BANK_NAME = "بنك الدم المركزي (Hematos)";
 
     const STATUS_MAP = {
       'Pending': { label: 'بانتظار مزامنة LIS', color: 'bg-slate-100 text-slate-700 border-slate-300' },
-      'Sent': { label: 'تم الإرسال', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-      'Received': { label: 'استلمت بالمستشفى (ومطابقة بـ LIS)', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      'Sent': { label: 'تم الإرسال (بانتظار وصول العينة)', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+      'Received': { label: 'استلمت بالمستشفى (مطابقة LIS)', color: 'bg-blue-50 text-blue-700 border-blue-200' },
       'In-Testing': { label: 'قيد الفحص بالجهاز', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
       'Completed': { label: 'تم الفحص (معتمد)', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
     };
@@ -149,7 +156,7 @@
       { id: "fac-1", name: PRIMARY_HOSPITAL_NAME, type: "المختبر المرجعي الإقليمي", city: "بريدة", isClaimed: true, owner: "د. عبد الرحمن التويجري" },
       { id: "fac-2", name: REHAB_NAME, type: "مراكز التأهيل والرعاية", city: "بريدة", isClaimed: true, owner: "أخصائي / سلطان الحربي" },
       { id: "fac-3", name: PRISON_NAME, type: "المديرية العامة للسجون", city: "بريدة", isClaimed: true, owner: "رائد طبيب / خالد المطيري" },
-      { id: "fac-4", name: LIS_NAME, type: "نظام ربط وإدارة مخبرية", city: "السيرفر المركزي", isClaimed: true, owner: "مدير النظام" },
+      { id: "fac-4", name: LIS_NAME, type: "نظام محاكاة الأجهزة", city: "بريدة", isClaimed: true, owner: "مدير النظام" },
       { id: "fac-5", name: BLOOD_BANK_NAME, type: "مركز نقل الدم", city: "بريدة", isClaimed: true, owner: "أخصائي بنك الدم" },
       { id: "fac-6", name: SPECIALIST_HOSPITAL_NAME, type: "مختبر مستشفى تخصصي", city: "بريدة", isClaimed: true, owner: "د. طارق الفوزان" }
     ];
@@ -220,41 +227,21 @@
       }
     ];
 
-    // تعديل الكواشف لدعم توفرها بشكل منفصل في المستشفيين
+    // فصل المخزون لكل مستشفى 
     const INITIAL_REAGENTS = [
-      { id: "dr0006_blood_panel", name: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)", dept: "Chemistry", is_manual: false, avail_central: true, avail_spec: true },
-      { id: "urine_culture", name: "زراعة بول وحساسية مضادات", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", avail_central: true, avail_spec: true },
-      { id: "expatriate_screening", name: "فحص العمالة الوافدة", dept: "Parasitology", is_manual: true, manual_type: "worker_microbiology", avail_central: true, avail_spec: true },
-      { id: "semen_analysis", name: "تحليل السائل المنوي المجهري", dept: "Parasitology", is_manual: true, manual_type: "semen", avail_central: true, avail_spec: true },
-      // البوتاسيوم نافذ في التخصصي ومتوفر في المركزي
-      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", is_manual: false, avail_central: true, avail_spec: false },
-      { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", is_manual: false, avail_central: true, avail_spec: true },
-      // فحص السموم نافذ في المركزي ومتوفر في التخصصي
-      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", is_manual: false, avail_central: false, avail_spec: true },
-      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", dept: "Chemistry", is_manual: false, avail_central: true, avail_spec: true },
-      { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", is_manual: false, avail_central: true, avail_spec: true }
+      { id: "dr0006_blood_panel", name: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)", dept: "Chemistry", is_manual: false, avail_central: true, avail_specialist: true },
+      { id: "urine_culture", name: "زراعة بول وحساسية مضادات", dept: "Microbiology", is_manual: true, manual_type: "culture_worksheet", avail_central: true, avail_specialist: true },
+      { id: "expatriate_screening", name: "فحص العمالة الوافدة", dept: "Parasitology", is_manual: true, manual_type: "worker_microbiology", avail_central: true, avail_specialist: true },
+      { id: "semen_analysis", name: "تحليل السائل المنوي المجهري", dept: "Parasitology", is_manual: true, manual_type: "semen", avail_central: true, avail_specialist: true },
+      { id: "potassium", name: "تحليل البوتاسيوم (Potassium - K+)", dept: "Chemistry", is_manual: false, avail_central: true, avail_specialist: false },
+      { id: "cbc", name: "تحليل دم شامل (CBC)", dept: "Hematology", is_manual: false, avail_central: true, avail_specialist: true },
+      { id: "toxicology", name: "فحص السموم والمؤثرات العقلية", dept: "Chemistry", is_manual: false, avail_central: false, avail_specialist: true },
+      { id: "lft", name: "وظائف كبد وكلى (LFT & RFT)", dept: "Chemistry", is_manual: false, avail_central: true, avail_specialist: true },
+      { id: "hiv_hep", name: "فحص الفيروسات والمناعة (Serology)", dept: "Serology", is_manual: false, avail_central: true, avail_specialist: true }
     ];
 
-    const INITIAL_SAMPLES = [
-      {
-        sample_id: "SMP-RHB-501", patient_ref: "عبدالرحمن ناصر المنصور", department: "Chemistry", test_type: "استمارة طلب تحاليل دم (DR-0006 - تحديد متعدد)", is_manual: false, selected_tests: ["SGOT (AST)", "SGPT", "CBC"], sender_facility: REHAB_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "مختبر الاستقبال - مستشفى بريدة", status: "Received", created_at: "2026-09-08 08:30", notes: "", attachment_name: "استمارة_إحالة_DR0006.pdf", result: null, structured_data: null, ordered_by: "أخصائي / سلطان الحربي"
-      },
-      {
-        sample_id: "SMP-BRY-999", patient_ref: "مريض داخلي - 112", department: "Chemistry", test_type: "تحليل دم شامل (CBC)", is_manual: false, sender_facility: PRIMARY_HOSPITAL_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "مختبر الاستقبال - مستشفى بريدة", status: "Received", created_at: "2026-09-08 09:00", notes: "طلب مباشر من العيادة الداخلية", attachment_name: null, result: null, structured_data: null, ordered_by: "أخصائي / صالح الحربي"
-      },
-      {
-        sample_id: "SMP-CULT-901", patient_ref: "نزيل - 6612", department: "Microbiology", test_type: "زراعة بول وحساسية مضادات", is_manual: true, manual_type: "culture_worksheet", sender_facility: PRISON_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "حاضنة قسم الميكروبيولوجي", status: "Received", created_at: "2026-09-07 12:00", notes: "اشتباه التهاب بكتيري", attachment_name: "طلب_زراعة_بول.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
-      },
-      {
-        sample_id: "SMP-MANUAL-702", patient_ref: "وافدة - 1092", department: "Parasitology", test_type: "فحص العمالة الوافدة", is_manual: true, manual_type: "worker_microbiology", sender_facility: LIS_NAME, assigned_lab: SPECIALIST_HOSPITAL_NAME, current_location: "قسم الطفيليات - وحدة فحص العمالة", status: "Received", created_at: "2026-09-07 11:45", notes: "فحص الإقامة الدوري للعمالة الوافدة - قسم النساء", attachment_name: "نموذج_إحالة_فحص_عمالة.pdf", result: null, structured_data: null, ordered_by: "مستخدم LIS"
-      },
-      {
-        sample_id: "SMP-MANUAL-701", patient_ref: "نزيل - 9104", department: "Parasitology", test_type: "تحليل السائل المنوي المجهري", is_manual: true, manual_type: "semen", sender_facility: PRISON_NAME, assigned_lab: PRIMARY_HOSPITAL_NAME, current_location: "وحدة المجهر والباراسايتولوجي", status: "Received", created_at: "2026-09-07 11:30", notes: "تحليل سريري مجهري", attachment_name: "سجل_النزيل_السريري.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
-      },
-      {
-        sample_id: "SMP-BRY-101", patient_ref: "نزيل - 8812", department: "Chemistry", test_type: "فحص السموم والمؤثرات العقلية", is_manual: false, sender_facility: PRISON_NAME, assigned_lab: SPECIALIST_HOSPITAL_NAME, current_location: "في الطريق إلى المختبر", status: "Sent", created_at: "2026-09-07 11:20", notes: "العينة مرسلة من السجن وفي الطريق للمستشفى", attachment_name: "تقرير_طبي_أولي.pdf", result: null, structured_data: null, ordered_by: "رائد طبيب / خالد المطيري"
-      }
-    ];
+    // التفريغ بناءً على طلبك لتبدأ بدون عينات
+    const INITIAL_SAMPLES = [];
 
     const INITIAL_BLOOD_INVENTORY = [
       { type: "O+", count: 18 }, { type: "O-", count: 4 },
@@ -269,47 +256,29 @@
     let recordsDeptFilter = "All";
     let recordsStatusFilter = "All";
     
-    // حالة التبويب في المستشفى المرجعي
     let hospitalActiveTab = "specialist"; 
-    // فلتر (موقع القدوم) للأخصائي
     let hospitalSenderFilter = "All";
 
     function initDatabase() {
-      const storedSamples = JSON.parse(localStorage.getItem('ln_samples') || '[]');
-      const hasRehabSample = storedSamples.some(s => s.sender_facility === REHAB_NAME);
-
-      if (!localStorage.getItem('ln_facilities') || !localStorage.getItem('ln_samples') || !hasRehabSample) {
+      if (!localStorage.getItem('ln_facilities')) {
         localStorage.setItem('ln_facilities', JSON.stringify(INITIAL_FACILITIES));
         localStorage.setItem('ln_samples', JSON.stringify(INITIAL_SAMPLES));
+        localStorage.setItem('ln_reagents', JSON.stringify(INITIAL_REAGENTS));
+        localStorage.setItem('ln_blood_inventory', JSON.stringify(INITIAL_BLOOD_INVENTORY));
+        localStorage.setItem('ln_logs', JSON.stringify([
+          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready.`
+        ]));
       }
       
       let currentReagents = JSON.parse(localStorage.getItem('ln_reagents') || '[]');
-      const hasDr = currentReagents.some(r => r.id === 'dr0006_blood_panel');
-      // فحص الخصائص الجديدة للتأكد من التحديث
-      const hasSplitInventory = currentReagents.some(r => r.avail_central !== undefined);
-      
-      if (!currentReagents.length || !hasDr || !hasSplitInventory) {
+      const hasSplitInv = currentReagents.some(r => r.avail_central !== undefined);
+      if (!currentReagents.length || !hasSplitInv) {
         localStorage.setItem('ln_reagents', JSON.stringify(INITIAL_REAGENTS));
       }
 
-      if (!localStorage.getItem('ln_blood_inventory')) {
-        localStorage.setItem('ln_blood_inventory', JSON.stringify(INITIAL_BLOOD_INVENTORY));
-      }
-
-      if (!localStorage.getItem('ln_logs')) {
-        localStorage.setItem('ln_logs', JSON.stringify([
-          `[${new Date().toLocaleTimeString('en-US')}] SYSTEM_BOOT >> LabNexus Ready. Multi-tenant Separation Activated.`
-        ]));
-      }
+      // الدخول الافتراضي للمستشفى المركزي
       if (!localStorage.getItem('ln_user')) {
-        loginUser({
-          id: "usr-spec",
-          name: "أخصائي / صالح الحربي",
-          email: "lab.buraydah@labnexus.sa",
-          role: "specialist",
-          facility_id: "fac-1",
-          facility_name: PRIMARY_HOSPITAL_NAME
-        });
+        demoLogin('specialist');
       }
     }
 
@@ -421,14 +390,12 @@
       if (!item) return;
 
       let isAvailNow = false;
-
-      // تعديل حالة المحلول في المستشفى الذي سجل الدخول منه الأخصائي فقط
       if (user.facility_name === PRIMARY_HOSPITAL_NAME) {
         item.avail_central = !item.avail_central;
         isAvailNow = item.avail_central;
       } else {
-        item.avail_spec = !item.avail_spec;
-        isAvailNow = item.avail_spec;
+        item.avail_specialist = !item.avail_specialist;
+        isAvailNow = item.avail_specialist;
       }
 
       db.saveReagents(reagents);
@@ -444,7 +411,7 @@
     }
 
     function notifyHealthCluster() {
-      db.addLog("HEALTH_CLUSTER >> إرسال إخطار للتجمع الصحي حول النواقص المخبرية من المستشفى المركزي.");
+      db.addLog("HEALTH_CLUSTER >> إرسال إخطار للتجمع الصحي حول النواقص المخبرية.");
       showToast("تم إرسال إخطار للتجمع الصحي بنفاذ العينات بنجاح!", "success");
     }
 
@@ -468,10 +435,14 @@
       renderApp();
     }
 
+    function switchAppTab(tab) {
+      currentAppTab = tab;
+      renderApp();
+    }
+
     // --- نظام موزع الأحمال (Load Balancer) ---
     function getHospitalLoad(hospitalName) {
       const allSamples = db.getSamples();
-      // استثناء العينات المكتملة أو التي لا تزال بالانتظار
       const pendingSamples = allSamples.filter(s => s.assigned_lab === hospitalName && s.status !== 'Completed' && s.status !== 'Pending');
       const count = pendingSamples.length;
       
@@ -489,7 +460,7 @@
     }
 
     /* ==========================================================================
-       2. MANUAL TEMPLATES REGISTRY (FOR MANUAL TESTS)
+       2. MANUAL TEMPLATES REGISTRY
        ========================================================================== */
 
     function getManualTestType(testType) {
@@ -507,15 +478,10 @@
       if (!s) return;
 
       const manualType = s.manual_type || getManualTestType(s.test_type);
-      if (manualType === "culture_worksheet") {
-        renderCultureWorksheetForm(s);
-      } else if (manualType === "worker_microbiology") {
-        renderWorkerMicrobiologyForm(s);
-      } else if (manualType === "semen") {
-        renderSemenAnalysisForm(s);
-      } else {
-        showToast("هذا الفحص غير مرتبط باستمارة يدوية", "error");
-      }
+      if (manualType === "culture_worksheet") renderCultureWorksheetForm(s);
+      else if (manualType === "worker_microbiology") renderWorkerMicrobiologyForm(s);
+      else if (manualType === "semen") renderSemenAnalysisForm(s);
+      else showToast("هذا الفحص غير مرتبط باستمارة يدوية", "error");
     }
 
     function renderCultureWorksheetForm(s) {
@@ -785,7 +751,7 @@
       };
 
       s.status = "Completed";
-      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي - " + s.assigned_lab;
+      s.current_location = "تم الاعتماد من قسم الميكروبيولوجي";
       s.structured_data = structured;
       s.result = `[URINE / STOOL CULTURE – WORKSHEET]
 • Final Organism: ${structured.final_organism}
@@ -795,9 +761,9 @@
 • Comments: ${structured.comments}`;
 
       db.saveSamples(samples);
-      db.addLog(`CULTURE_WORKSHEET >> Sample [${sampleId}] verified and recorded according to Urine/Stool worksheet standard.`);
+      db.addLog(`CULTURE_WORKSHEET >> Sample [${sampleId}] verified and recorded.`);
       closeModal();
-      showToast(`تم اعتماد وحفظ ورقة عمل المزرعة للعينة (${sampleId}) بنجاح!`, 'success');
+      showToast(`تم اعتماد وحفظ ورقة عمل المزرعة للعينة بنجاح!`, 'success');
       renderApp();
     }
 
@@ -808,9 +774,9 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">فحص يدوي مجهري</span>
-                <h3 class="font-extrabold text-slate-900 text-sm">نموذج الفحوصات المخبرية للعمالة الوافدة (فحص العمالة - نساء)</h3>
+                <h3 class="font-extrabold text-slate-900 text-sm">نموذج الفحوصات المخبرية للعمالة الوافدة</h3>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5">قسم الطفيليات والفحوص المجهرية (Parasitology Unit) | العينة: ${s.sample_id}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">قسم الطفيليات والفحوص المجهرية | العينة: ${s.sample_id}</p>
             </div>
             <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
@@ -918,9 +884,9 @@
       };
 
       s.status = "Completed";
-      s.current_location = "تم الاعتماد من قسم الطفيليات - " + s.assigned_lab;
+      s.current_location = "تم الاعتماد من قسم الطفيليات";
       s.structured_data = structured;
-      s.result = `[تقرير فحص العمالة الوافدة - ${s.assigned_lab}]
+      s.result = `[تقرير فحص العمالة الوافدة]
 • Urine Pregnancy: ${structured.pregnancy.toUpperCase()}
 • Urine Glucose: ${structured.glucose.toUpperCase()}
 • Urine Parasites: ${structured.urine_parasites.toUpperCase()}
@@ -932,7 +898,7 @@
       db.saveSamples(samples);
       db.addLog(`PARASITOLOGY_BENCH >> Expatriate screening completed for [${sampleId}]. Decision: ${structured.decision}.`);
       closeModal();
-      showToast(`تم اعتماد تقرير فحص العمالة الوافدة للعينة (${sampleId}) بنجاح!`, 'success');
+      showToast(`تم اعتماد تقرير فحص العمالة الوافدة بنجاح!`, 'success');
       renderApp();
     }
 
@@ -1156,17 +1122,13 @@
     setInterval(backgroundDeviceListener, 2000);
 
     /* ==========================================================================
-       4. RPA AUTOMATION INJECTION (LIS SYNC SYSTEM)
+       4. LIS RPA SYNC (نظام المطابقة والاستلام الآلي)
        ========================================================================== */
-
     function startLisRpaSync() {
       const samples = db.getSamples();
-      // استخراج العينات المعلقة الخاصة بنظام LIS المحلي
-      const localPending = samples.filter(s => s.sender_facility === LIS_NAME && s.status === 'Pending');
-      // استخراج العينات التي تم إرسالها من الأطراف (سجن، تأهيل) ولم يتم استلامها بعد في LIS
-      const incomingSent = samples.filter(s => s.status === 'Sent' && s.assigned_lab !== BLOOD_BANK_NAME);
-
-      const totalTasks = localPending.length + incomingSent.length;
+      
+      // LIS مرتبط بالمركزي فقط، لذلك يقرأ العينات المتجهة للمركزي والتي لم يتم استلامها بعد (Sent)
+      const incomingSent = samples.filter(s => s.status === 'Sent' && s.assigned_lab === PRIMARY_HOSPITAL_NAME);
 
       openModal(`
         <div class="p-6 bg-slate-900 text-slate-300 rounded-3xl overflow-hidden shadow-2xl border border-slate-700">
@@ -1177,8 +1139,8 @@
             </div>
             <button onclick="closeModal()" class="text-slate-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
-          <div id="rpa-terminal" class="font-mono text-xs space-y-2 h-48 overflow-y-auto pr-2 terminal-scroll">
-            <div class="text-slate-500">> Initiating LIS-LabNexus secure handshake...</div>
+          <div id="rpa-terminal" class="font-mono text-xs space-y-2 h-48 overflow-y-auto pr-2 terminal-scroll" dir="ltr">
+            <div class="text-slate-500">> Initiating connection with Central Hospital Receiving Database...</div>
           </div>
         </div>
       `);
@@ -1188,69 +1150,368 @@
       const delay = (ms) => new Promise(res => setTimeout(res, ms));
       
       (async () => {
-        if(totalTasks === 0) {
+        if(incomingSent.length === 0) {
           await delay(800);
-          terminal.innerHTML += `<div class="text-amber-400">> No pending local uploads or incoming samples found in the LIS queue.</div>`;
+          terminal.innerHTML += `<div class="text-amber-400">> No new incoming samples found in transit to Central Hospital.</div>`;
           terminal.scrollTop = terminal.scrollHeight;
-          await delay(2000);
-          closeModal();
           return;
         }
 
         await delay(800);
-        terminal.innerHTML += `<div class="text-emerald-400">> [1/4] Handshake successful. Accessing LIS local DB...</div>`;
+        terminal.innerHTML += `<div class="text-emerald-400">> [1/3] Connection established successfully.</div>`;
         terminal.scrollTop = terminal.scrollHeight;
         
         await delay(1200);
-        if (localPending.length > 0) {
-          terminal.innerHTML += `<div class="text-blue-400">> [2/4] Uploading ${localPending.length} locally created samples to LabNexus...</div>`;
-          let h1Count = 0, h2Count = 0;
-          for (let i = 0; i < localPending.length; i++) {
-            const s = localPending[i];
-            const targetLab = getLeastLoadedHospital();
-            s.assigned_lab = targetLab;
-            s.status = "Sent";
-            s.current_location = "تمت المزامنة عبر RPA - في الطريق لـ " + targetLab;
-            if(targetLab === PRIMARY_HOSPITAL_NAME) h1Count++; else h2Count++;
-            db.saveSamples(samples); // Save inside loop to affect load balancer correctly
-          }
-          terminal.innerHTML += `<div class="text-emerald-400">  ↳ Routed: ${h1Count} to Central, ${h2Count} to Specialist.</div>`;
-        } else {
-          terminal.innerHTML += `<div class="text-slate-400">> [2/4] No local LIS uploads pending.</div>`;
-        }
+        terminal.innerHTML += `<div class="text-blue-400">> [2/3] Found ${incomingSent.length} samples registered by peripheral sites (Rehab/Prison/etc). Scanning barcodes...</div>`;
         terminal.scrollTop = terminal.scrollHeight;
         
         await delay(1500);
-        if (incomingSent.length > 0) {
-          terminal.innerHTML += `<div class="text-blue-400">> [3/4] Fetching ${incomingSent.length} incoming samples from peripheral nodes (Prison/Rehab)...</div>`;
-          terminal.scrollTop = terminal.scrollHeight;
-          await delay(1000);
-          for (let i = 0; i < incomingSent.length; i++) {
-            const s = incomingSent[i];
-            s.status = "Received";
-            s.current_location = "تم الاستلام والمطابقة بـ LIS (في المختبر)";
-            db.saveSamples(samples);
-          }
-          terminal.innerHTML += `<div class="text-emerald-400">  ↳ Successfully verified and marked ${incomingSent.length} samples as RECEIVED in LIS.</div>`;
-        } else {
-          terminal.innerHTML += `<div class="text-slate-400">> [3/4] No incoming peripheral samples to receive.</div>`;
+        for (let i = 0; i < incomingSent.length; i++) {
+          const s = incomingSent[i];
+          s.status = "Received";
+          s.current_location = "استلمت بالمستشفى (مطابقة LIS)";
+          db.saveSamples(samples);
         }
+        terminal.innerHTML += `<div class="text-emerald-400">  ↳ Automatically updated ${incomingSent.length} samples to 'RECEIVED'. Status synced to LabNexus.</div>`;
         terminal.scrollTop = terminal.scrollHeight;
 
-        db.addLog(`LIS_RPA_SYNC >> Processed ${localPending.length} outbound, ${incomingSent.length} inbound samples.`);
+        db.addLog(`LIS_RPA_SYNC >> Matched and received ${incomingSent.length} samples at Central Hospital.`);
         
-        terminal.innerHTML += `<div class="text-white font-bold bg-emerald-600/20 p-2 border border-emerald-500/30 rounded mt-3">> [4/4] Synchronization complete. Updating data tables...</div>`;
+        terminal.innerHTML += `<div class="text-white font-bold bg-emerald-600/20 p-2 border border-emerald-500/30 rounded mt-3">> [3/3] Synchronization complete. Updating Worklist...</div>`;
         terminal.scrollTop = terminal.scrollHeight;
         
         await delay(2000);
         closeModal();
-        showToast('تمت مزامنة نظام LIS مع منصة LabNexus بنجاح', 'success');
+        showToast('تم تحديث حالة العينات الواردة إلى "تم الاستلام" بنجاح', 'success');
         renderApp();
       })();
     }
 
     /* ==========================================================================
-       5. MODAL: DR-0006 INTERACTIVE SHEET VIEW
+       5. LIS DASHBOARD (الواجهة التقنية لنظام LIS)
+       ========================================================================== */
+    function renderLisDashboard(user) {
+      const samples = db.getSamples();
+      
+      // LIS يعرض العينات المتجهة للمركزي فقط.
+      const expectedSamples = samples.filter(s => s.assigned_lab === PRIMARY_HOSPITAL_NAME && s.department !== 'BloodBank');
+      
+      expectedSamples.sort((a, b) => {
+        const weights = { 'Sent': 1, 'Pending': 2, 'Received': 3, 'In-Testing': 4, 'Completed': 5 };
+        return (weights[a.status] || 6) - (weights[b.status] || 6);
+      });
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-[#0f172a] text-slate-300 p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-700">
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-black text-white font-mono uppercase">LIS Control Terminal</h1>
+                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                 
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1 font-mono">
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+              <button onclick="startLisRpaSync()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-[0_0_15px_rgba(79,70,229,0.4)] border border-indigo-400 font-mono">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <span>SYNC INCOMING [F5]</span>
+              </button>
+              <button onclick="openNewSampleModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-600 font-mono">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>محاكاة إدخال عينة</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>
+                <span>LIS Unified Worklist (Central Integration Queue)</span>
+              </h2>
+              <span class="text-[11px] font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded">Total: ${expectedSamples.length}</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs lis-table" dir="ltr">
+                <thead>
+                  <tr>
+                    <th class="text-left">ACCESSION #</th>
+                    <th class="text-right">اسم المريض</th>
+                    <th class="text-right">اسم التحليل</th>
+                    <th class="text-left">SYNC STATUS</th>
+                    <th class="text-right">النتيجة</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${expectedSamples.length === 0 ? `
+                    <tr><td colspan="5" class="p-8 text-center text-slate-400 font-mono">NO DATA IN QUEUE.</td></tr>
+                  ` : expectedSamples.map(s => {
+                    let badgeClass = "bg-slate-100 text-slate-600";
+                    let statusText = s.status;
+                    if(s.status === 'Pending') { badgeClass = "bg-amber-100 text-amber-800 border border-amber-200"; statusText = "LOCAL_PENDING"; }
+                    if(s.status === 'Sent') { badgeClass = "bg-blue-100 text-blue-800 border border-blue-200"; statusText = "IN_TRANSIT"; }
+                    if(s.status === 'Received') { badgeClass = "bg-indigo-100 text-indigo-800 border border-indigo-200"; statusText = "RECEIVED_SYNCED"; }
+                    if(s.status === 'In-Testing') { badgeClass = "bg-purple-100 text-purple-800 border border-purple-200"; statusText = "PROCESSING"; }
+                    if(s.status === 'Completed') { badgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200"; statusText = "VALIDATED"; }
+                    
+                    return `
+                    <tr class="hover:bg-slate-50 transition">
+                      <td class="text-left font-mono font-bold text-indigo-700">${s.sample_id}</td>
+                      <td class="text-right font-semibold text-slate-900">${s.patient_ref}</td>
+                      <td class="text-right font-bold text-slate-700">${s.test_type}</td>
+                      <td class="text-left">
+                        <span class="px-2 py-1 rounded font-bold font-mono text-[10px] ${badgeClass}">${statusText}</span>
+                      </td>
+                      <td class="text-right font-bold text-[11px]">
+                        ${s.status === 'Completed' ? `
+                          <button onclick="showResultModal('${s.sample_id}')" class="text-emerald-600 hover:text-emerald-800 transition flex items-center justify-end gap-1 w-full">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> تقرير معتمد
+                          </button>
+                        ` : `<span class="text-slate-400">قيد المعالجة</span>`}
+                      </td>
+                    </tr>
+                  `}).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       6. MODAL: NEW SAMPLE & SMART INVENTORY ROUTING
+       ========================================================================== */
+    function openNewSampleModal() {
+      const user = db.getUser();
+      const isLis = user.facility_name === LIS_NAME;
+      const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
+      const randomCode = 'SMP-' + (isLis ? 'LIS-' : user.facility_name.includes("التأهيل") ? 'RHB-' : 'PR-') + Math.floor(1000 + Math.random() * 9000);
+
+      openModal(`
+        <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm">${isLis ? 'محاكاة إدخال عينة (Local LIS Order)' : 'تسجيل عينة وإرسالها'}</h3>
+              <p class="text-[11px] text-slate-400">الجهة الطالبة: ${user.facility_name}</p>
+            </div>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+
+          <form onsubmit="handleCreateSample(event)" class="space-y-3.5 text-xs">
+            
+            <div id="routing-container" class="${(isDoctorOrdering || isLis) ? 'hidden' : 'block'} bg-slate-50 border border-brand-200 rounded-xl p-4 space-y-2 mb-2">
+              <label class="block font-bold text-slate-800 text-xs mb-1 flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> تحديد الوجهة (المستشفى)
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex items-center gap-2">
+                  <input type="radio" name="dest_hospital" value="${PRIMARY_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5" checked onchange="updateTestTypes(document.getElementById('new-dept-select').value)">
+                  <span class="font-bold text-[11px] text-slate-800">المركزي</span>
+                </label>
+                <label class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex items-center gap-2">
+                  <input type="radio" name="dest_hospital" value="${SPECIALIST_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5" onchange="updateTestTypes(document.getElementById('new-dept-select').value)">
+                  <span class="font-bold text-[11px] text-slate-800">التخصصي</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">باركود العينة</label>
+                <input id="new-smp-id" type="text" value="${randomCode}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono text-brand-700" readonly>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">اسم المريض</label>
+                <input id="new-pat-ref" type="text" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">قسم المختبر (Department)</label>
+              <select id="new-dept-select" onchange="updateTestTypes(this.value)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white">
+                <option value="">-- اختر القسم --</option>
+                ${LAB_DEPARTMENTS.filter(d => d.id !== 'BloodBank').map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">نوع الفحص المطلوب</label>
+              <select id="new-test-type" onchange="onTestTypeChanged(this)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800">
+                <option value="">-- يرجى اختيار القسم أولاً --</option>
+              </select>
+            </div>
+
+            <div id="dr0006-checklist-container" class="hidden bg-slate-50 border border-slate-300 rounded-xl p-4 space-y-3">
+              <div class="border-b border-slate-300 pb-2">
+                <span class="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                  <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i> نموذج الفحوصات الشاملة (DR-0006)
+                </span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]" dir="ltr">
+                ${DR0006_FORM_STRUCTURE.map(col => `
+                  <div class="space-y-4">
+                    ${col.categories.map(cat => `
+                      <div class="border border-slate-200 bg-white rounded-md overflow-hidden shadow-sm">
+                        <label class="font-bold text-slate-800 bg-slate-100 flex items-center gap-2 px-2 py-1.5 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition">
+                          <input type="checkbox" onclick="toggleDrCategory('${cat.id}', this.checked)" class="accent-brand-600 w-3.5 h-3.5">
+                          ${cat.name}
+                        </label>
+                        <div class="p-2 space-y-1.5 bg-white max-h-60 overflow-y-auto">
+                          ${cat.tests.map(test => `
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-700 transition">
+                              <input type="checkbox" name="dr_test_box" data-cat="${cat.id}" value="${test}" class="accent-brand-600 w-3.5 h-3.5">
+                              <span class="font-semibold text-slate-600">${test}</span>
+                            </label>
+                          `).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">ملاحظات سريرية</label>
+              <textarea id="new-notes" rows="2" class="w-full p-2.5 border border-slate-200 rounded-xl"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+              <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
+              <button type="submit" id="btn-submit-sample" class="px-5 py-2 ${isLis ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-mono' : 'bg-brand-600 hover:bg-brand-700 text-white'} rounded-xl font-bold shadow-md flex items-center gap-1.5">
+                <i data-lucide="${isLis ? 'save' : 'send'}" class="w-4 h-4"></i>
+                <span>${isLis ? 'SAVE LOCAL' : 'إرسال الطلب'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      `);
+      lucide.createIcons();
+    }
+
+    function updateTestTypes(dept) {
+      const select = document.getElementById('new-test-type');
+      if(!dept) {
+        select.innerHTML = '<option value="">-- يرجى اختيار القسم أولاً --</option>';
+        return;
+      }
+      
+      const user = db.getUser();
+      const isLis = user.facility_name === LIS_NAME;
+      const isDoctor = user.role === 'specialist' && hospitalActiveTab === 'doctor';
+      
+      let destHospital = PRIMARY_HOSPITAL_NAME;
+      if (isLis) {
+        destHospital = PRIMARY_HOSPITAL_NAME; // LIS مربوط بالمركزي دائماً
+      } else if (isDoctor) {
+        destHospital = user.facility_name;
+      } else {
+        const rad = document.querySelector('input[name="dest_hospital"]:checked');
+        if (rad) destHospital = rad.value;
+      }
+
+      const isCentral = destHospital === PRIMARY_HOSPITAL_NAME;
+      const reagents = db.getReagents().filter(r => r.dept === dept);
+      
+      select.innerHTML = '<option value="">-- اضغط لاختيار الفحص --</option>' +
+          reagents.map(r => {
+            const isAvail = isCentral ? r.avail_central : r.avail_specialist;
+            const statusText = isAvail ? " [✓ متوفر]" : " [✖ نافذ]";
+            return `<option value="${r.name}" ${!isAvail ? 'disabled' : ''}>${r.name} ${statusText}</option>`;
+          }).join('');
+      
+      const drContainer = document.getElementById('dr0006-checklist-container');
+      if (drContainer) drContainer.classList.add('hidden');
+    }
+
+    function onTestTypeChanged(selectElem) {
+      const testName = selectElem.value;
+      const isDr = testName.includes("DR-0006") || testName.includes("تحاليل دم");
+      const drContainer = document.getElementById('dr0006-checklist-container');
+      if (drContainer) {
+        if (isDr) drContainer.classList.remove('hidden');
+        else drContainer.classList.add('hidden');
+      }
+    }
+
+    function handleCreateSample(e) {
+      e.preventDefault();
+      const user = db.getUser();
+      const isLis = user.facility_name === LIS_NAME;
+      const isDoctor = user.role === 'specialist' && hospitalActiveTab === 'doctor';
+      
+      const smpId = document.getElementById('new-smp-id').value.trim();
+      const testType = document.getElementById('new-test-type').value;
+
+      let assignedLab = PRIMARY_HOSPITAL_NAME;
+      let initStatus = "Sent";
+      let initLocation = "في الطريق إلى المختبر";
+
+      if (isDoctor) {
+        assignedLab = user.facility_name;
+        initStatus = "Received";
+        initLocation = "طلب داخلي (من العيادة)";
+      } else if (isLis) {
+        assignedLab = PRIMARY_HOSPITAL_NAME;
+        initStatus = "Pending";
+        initLocation = "محفوظة محلياً (LIS)";
+      } else {
+        const destRadio = document.querySelector('input[name="dest_hospital"]:checked');
+        if (destRadio) assignedLab = destRadio.value;
+        initLocation = "في الطريق إلى " + assignedLab;
+      }
+
+      let selectedTests = [];
+      if (testType.includes("DR-0006") || testType.includes("تحاليل دم")) {
+        document.querySelectorAll('input[name="dr_test_box"]:checked').forEach(cb => { selectedTests.push(cb.value); });
+      }
+
+      const manualType = getManualTestType(testType);
+
+      const newSample = {
+        sample_id: smpId,
+        patient_ref: document.getElementById('new-pat-ref').value.trim(),
+        department: document.getElementById('new-dept-select').value,
+        test_type: testType,
+        is_manual: Boolean(manualType),
+        manual_type: manualType,
+        selected_tests: selectedTests,
+        sender_facility: user.facility_name,
+        assigned_lab: assignedLab,
+        current_location: initLocation,
+        status: initStatus,
+        created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        notes: document.getElementById('new-notes').value.trim(),
+        attachment_name: null,
+        result: null,
+        structured_data: null,
+        ordered_by: user.name
+      };
+
+      const samples = db.getSamples();
+      samples.unshift(newSample);
+      db.saveSamples(samples);
+
+      if (isLis) {
+        db.addLog(`LIS_LOCAL >> Barcode ${smpId} saved locally.`);
+        showToast(`تم حفظ طلب محلي في LIS`, 'success');
+      } else {
+        db.addLog(`ORDER_PLACED >> Barcode ${smpId} routed to [${assignedLab}].`);
+        showToast(`تم الإرسال بنجاح إلى (${assignedLab})`, 'success');
+      }
+      
+      closeModal();
+      renderApp();
+    }
+
+    /* ==========================================================================
+       7. RESULT MODAL & FILE PREVIEW
        ========================================================================== */
     function viewDr0006Sheet(sampleId) {
       const s = db.getSamples().find(item => item.sample_id === sampleId);
@@ -1288,1279 +1549,6 @@
       lucide.createIcons();
     }
 
-    /* ==========================================================================
-       6. VIEW: RECORDS & FACILITY LOGS
-       ========================================================================== */
-
-    function renderRecordsView() {
-      const user = db.getUser();
-      if (!user) return '';
-
-      const allSamples = db.getSamples();
-      const allFacilities = db.getFacilities();
-
-      const isSpecialist = user.role === 'specialist';
-
-      const accessibleSamples = isSpecialist 
-        ? allSamples.filter(s => s.assigned_lab === user.facility_name || s.sender_facility === user.facility_name)
-        : allSamples.filter(s => s.sender_facility === user.facility_name);
-
-      const accessibleFacilities = isSpecialist 
-        ? allFacilities 
-        : allFacilities.filter(f => f.name === user.facility_name);
-
-      let filteredSamples = accessibleSamples.filter(s => {
-        const query = (recordsSearchQuery || "").toLowerCase().trim();
-        const matchesQuery = !query || 
-          (s.sample_id && s.sample_id.toLowerCase().includes(query)) ||
-          (s.patient_ref && s.patient_ref.toLowerCase().includes(query)) ||
-          (s.test_type && s.test_type.toLowerCase().includes(query)) ||
-          (s.sender_facility && s.sender_facility.toLowerCase().includes(query)) ||
-          (s.department && s.department.toLowerCase().includes(query));
-
-        const matchesFacility = !isSpecialist || recordsFacilityFilter === 'All' || s.sender_facility === recordsFacilityFilter || s.assigned_lab === recordsFacilityFilter;
-        const matchesDept = recordsDeptFilter === 'All' || s.department === recordsDeptFilter;
-        const matchesStatus = recordsStatusFilter === 'All' || s.status === recordsStatusFilter;
-
-        return matchesQuery && matchesFacility && matchesDept && matchesStatus;
-      });
-
-      return `
-        <div class="space-y-6">
-          
-          <!-- Records Header Strip -->
-          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-xl font-black text-slate-900">
-                  ${isSpecialist ? `سجلات العينات (${user.facility_name})` : `سجل عينات: ${user.facility_name}`}
-                </h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isSpecialist ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}">
-                  ${isSpecialist ? 'سجلات المستشفى' : 'سجلات منشأتك فقط'}
-                </span>
-              </div>
-              <p class="text-xs text-slate-500 mt-1">
-                ${isSpecialist 
-                  ? 'عرض وإدارة الشحنات الواردة للمستشفى الخاص بك من كافة المراكز والمواقع المربوطة'
-                  : 'تتبع السجلات والتحاليل الخاصة بمنشأتك مع حماية تامة لسرية بيانات المراكز الأخرى'}
-              </p>
-            </div>
-            
-            <div class="text-xs font-bold text-slate-500 bg-slate-100 px-3.5 py-2 rounded-xl">
-              السجلات المتاحة: <span class="text-brand-700 font-extrabold">${accessibleSamples.length}</span>
-            </div>
-          </div>
-
-          <!-- Connected Sites Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 ${isSpecialist ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-4">
-            ${accessibleFacilities.map(fac => {
-              const facSamples = accessibleSamples.filter(s => s.sender_facility === fac.name || s.assigned_lab === fac.name);
-              const isRefLab = fac.type.includes("مرجعي") || fac.type.includes("تخصصي");
-
-              return `
-                <div ${isSpecialist ? `onclick="setRecordFacilityFilter('${fac.name}')"` : ''} class="bg-white p-4 rounded-2xl border transition ${isSpecialist ? 'cursor-pointer hover:border-slate-300 shadow-xs' : 'cursor-default'} ${recordsFacilityFilter === fac.name && isSpecialist ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200/80'}">
-                  <div class="flex items-center justify-between">
-                    <span class="p-2 rounded-xl ${isRefLab ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">
-                      <i data-lucide="${isRefLab ? 'building-2' : 'map-pin'}" class="w-4 h-4"></i>
-                    </span>
-                    <span class="text-xs font-mono font-extrabold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">${facSamples.length} عينة</span>
-                  </div>
-                  <h3 class="font-bold text-slate-900 text-xs mt-3">${fac.name}</h3>
-                  <p class="text-[10px] text-slate-400 mt-0.5">${fac.type} - ${fac.city}</p>
-                </div>
-              `;
-            }).join('')}
-          </div>
-
-          <!-- Advanced Search & Filter Bar -->
-          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 ${isSpecialist ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 text-xs">
-              
-              <!-- Search Query Input -->
-              <div class="sm:col-span-2 relative">
-                <label class="block font-bold text-slate-700 mb-1">بحث فوري بمواصفات العينة</label>
-                <div class="relative">
-                  <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute top-2.5 right-3"></i>
-                  <input type="text" id="records-search-input" oninput="onRecordSearchChanged(this.value)" value="${recordsSearchQuery}" placeholder="ابحث برقم الباركود، اسم المريض، الفحص..." class="w-full pr-9 pl-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
-                </div>
-              </div>
-
-              <!-- Filter by Facility/Site (فقط للمستشفى المركزي) -->
-              ${isSpecialist ? `
-                <div>
-                  <label class="block font-bold text-slate-700 mb-1">الموقع / المنشأة</label>
-                  <select onchange="onRecordFilterFacility(this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800">
-                    <option value="All" ${recordsFacilityFilter === 'All' ? 'selected' : ''}>كافة المواقع</option>
-                    ${allFacilities.map(f => `<option value="${f.name}" ${recordsFacilityFilter === f.name ? 'selected' : ''}>${f.name}</option>`).join('')}
-                  </select>
-                </div>
-              ` : ''}
-
-              <!-- Filter by Department -->
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">القسم الداخلي</label>
-                <select onchange="onRecordFilterDept(this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800">
-                  <option value="All" ${recordsDeptFilter === 'All' ? 'selected' : ''}>كافة الأقسام</option>
-                  ${LAB_DEPARTMENTS.map(d => `<option value="${d.id}" ${recordsDeptFilter === d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
-                </select>
-              </div>
-
-            </div>
-
-            <!-- Status Filter Pills -->
-            <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
-              <span class="text-[11px] font-bold text-slate-400">حالة العينة:</span>
-              ${['All', 'Pending', 'Sent', 'Received', 'In-Testing', 'Completed'].map(st => {
-                const label = st === 'All' ? 'الكل' : STATUS_MAP[st].label;
-                const isAct = recordsStatusFilter === st;
-                return `
-                  <button onclick="onRecordFilterStatus('${st}')" class="px-3 py-1 rounded-xl text-xs font-bold transition ${isAct ? 'bg-brand-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                    ${label}
-                  </button>
-                `;
-              }).join('')}
-            </div>
-          </div>
-
-          <!-- Filtered Records Table -->
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                <i data-lucide="database" class="w-4 h-4 text-brand-600"></i>
-                <span>نتائج البحث في سجلات العينات (${filteredSamples.length})</span>
-              </h2>
-              ${recordsSearchQuery || recordsFacilityFilter !== 'All' || recordsDeptFilter !== 'All' || recordsStatusFilter !== 'All' ? `
-                <button onclick="resetRecordFilters()" class="text-xs text-rose-600 hover:underline font-bold">إلغاء التصفية</button>
-              ` : ''}
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-right text-xs">
-                <thead class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
-                  <tr>
-                    <th class="p-4">الباركود</th>
-                    <th class="p-4">المريض / المستفيد</th>
-                    <th class="p-4">الجهة المرسلة</th>
-                    <th class="p-4">القسم ونوع الفحص</th>
-                    <th class="p-4">الحالة والموقع الحالي</th>
-                    <th class="p-4">التاريخ</th>
-                    <th class="p-4 text-center">التقرير</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  ${filteredSamples.length === 0 ? `
-                    <tr><td colspan="7" class="p-10 text-center text-slate-400">لا توجد عينات مسجلة تطابق معايير البحث.</td></tr>
-                  ` : filteredSamples.map(s => {
-                    const isDr = s.selected_tests && s.selected_tests.length > 0;
-                    return `
-                      <tr class="hover:bg-slate-50/70 transition ${s.status === 'Completed' ? 'completed-row' : ''}">
-                        <td class="p-4 font-black font-mono text-brand-700 text-sm">${s.sample_id}</td>
-                        <td class="p-4 font-semibold text-slate-800">${s.patient_ref}</td>
-                        <td class="p-4">
-                          <div class="font-bold text-slate-900">${s.sender_facility}</div>
-                          <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                            <i data-lucide="arrow-left" class="w-2.5 h-2.5"></i>
-                            <span>${s.assigned_lab}</span>
-                          </div>
-                        </td>
-                        <td class="p-4">
-                          <span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px] block w-max">${s.department}</span>
-                          <span class="font-bold text-slate-900 mt-1 block">${s.test_type}</span>
-                          ${isDr ? `
-                            <button onclick="viewDr0006Sheet('${s.sample_id}')" class="text-[10px] text-brand-600 font-bold hover:underline mt-0.5 block">
-                              استمارة DR-0006 (${s.selected_tests.length} فحص)
-                            </button>
-                          ` : ''}
-                        </td>
-                        <td class="p-4">
-                          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_MAP[s.status]?.color || ''}">
-                            ${STATUS_MAP[s.status]?.label || s.status}
-                          </span>
-                          <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
-                        </td>
-                        <td class="p-4 font-mono text-[11px] text-slate-500">${s.created_at}</td>
-                        <td class="p-4 text-center">
-                          ${s.status === 'Completed' ? `
-                            <button onclick="showResultModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-xs">
-                              <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
-                              <span>عرض النتيجة</span>
-                            </button>
-                          ` : `
-                            <span class="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-md">تحت الإجراء</span>
-                          `}
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
-      `;
-    }
-
-    function onRecordSearchChanged(val) {
-      recordsSearchQuery = val;
-      renderApp();
-    }
-
-    function onRecordFilterFacility(val) {
-      recordsFacilityFilter = val;
-      renderApp();
-    }
-
-    function setRecordFacilityFilter(facName) {
-      recordsFacilityFilter = (recordsFacilityFilter === facName) ? 'All' : facName;
-      renderApp();
-    }
-
-    function onRecordFilterDept(val) {
-      recordsDeptFilter = val;
-      renderApp();
-    }
-
-    function onRecordFilterStatus(val) {
-      recordsStatusFilter = val;
-      renderApp();
-    }
-
-    function resetRecordFilters() {
-      recordsSearchQuery = "";
-      recordsFacilityFilter = "All";
-      recordsDeptFilter = "All";
-      recordsStatusFilter = "All";
-      renderApp();
-    }
-
-    /* ==========================================================================
-       7. DASHBOARD: SPECIALIST (HOSPITAL TABS: MANAGER, DOCTOR, SPECIALIST)
-       ========================================================================== */
-
-    let currentSelectedDept = "All";
-
-    function renderHospitalDashboard(user) {
-      const allSamples = db.getSamples();
-      const reagents = db.getReagents();
-
-      // تصفية العينات لتكون مقتصرة على المستشفى الحالي فقط
-      let hospitalSamples = allSamples.filter(s => s.assigned_lab === user.facility_name && s.status !== 'Pending');
-      
-      let samples = hospitalSamples;
-
-      if (hospitalActiveTab === 'doctor') {
-        // الطبيب لا يرى سوى عيناته التي طلبها
-        samples = samples.filter(s => s.ordered_by === user.name);
-      } else {
-        if (currentSelectedDept !== "All") {
-          samples = samples.filter(s => s.department === currentSelectedDept);
-        }
-        if (hospitalActiveTab === 'specialist' && hospitalSenderFilter !== "All") {
-          samples = samples.filter(s => s.sender_facility === hospitalSenderFilter);
-        }
-      }
-      
-      // الترتيب الذكي:
-      // 1. In-Testing (قيد الفحص) في الأعلى
-      // 2. Received (استلمت) 
-      // 3. Sent (في الطريق)
-      // 4. Completed (مكتمل) في الأسفل
-      samples.sort((a, b) => {
-        const weights = { 'In-Testing': 1, 'Received': 2, 'Sent': 3, 'Completed': 4 };
-        return (weights[a.status] || 5) - (weights[b.status] || 5);
-      });
-
-      // الفلترة الديناميكية للكواشف بناء على القسم المختار
-      let displayedReagents = reagents;
-      if (currentSelectedDept !== "All") {
-        displayedReagents = reagents.filter(r => r.dept === currentSelectedDept);
-      }
-
-      const kpiSent = samples.filter(s => s.status === 'Sent').length;
-      const kpiReceived = samples.filter(s => s.status === 'Received').length;
-      const kpiTesting = samples.filter(s => s.status === 'In-Testing').length;
-      const kpiCompleted = samples.filter(s => s.status === 'Completed').length;
-
-      const getTabClass = (tab) => hospitalActiveTab === tab ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
-
-      const isCentral = user.facility_name === PRIMARY_HOSPITAL_NAME;
-
-      return `
-        <div class="space-y-6">
-
-          <!-- Header Strip & Hospital Tabs -->
-          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2 mb-3">
-                <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-              </div>
-              <div class="flex bg-slate-100 p-1 rounded-xl w-max">
-                <button onclick="hospitalActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
-                <button onclick="hospitalActiveTab='doctor'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('doctor')}">الطبيب (العيادات)</button>
-                <button onclick="hospitalActiveTab='specialist'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('specialist')}">الأخصائي والمخزون</button>
-              </div>
-            </div>
-            <div class="flex flex-col items-end gap-2">
-              </span>
-              ${(hospitalActiveTab === 'manager' || hospitalActiveTab === 'specialist') ? `
-                <button onclick="notifyHealthCluster()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition">
-                  <i data-lucide="bell" class="w-3.5 h-3.5"></i> إخطار التجمع الصحي بنفاذ العينات
-                </button>
-              ` : ''}
-            </div>
-          </div>
-
-          ${hospitalActiveTab === 'doctor' ? `
-            <div class="flex items-center gap-3 mt-2 mb-2">
-              <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="plus-circle" class="w-4 h-4 inline"></i> طلب تحليل مخبري للمريض</button>
-              <button onclick="openBloodRequestModal()" class="bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5"><i data-lucide="droplet" class="w-4 h-4 inline"></i> طلب نقل دم للمريض (Hematos)</button>
-            </div>
-          ` : `
-            <!-- Department Selector -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1">
-              <button onclick="filterByDept('All')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === 'All' ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
-                كافة الأقسام (${hospitalSamples.length})
-              </button>
-              ${LAB_DEPARTMENTS.filter(d => d.id !== 'BloodBank').map(d => `
-                <button onclick="filterByDept('${d.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${currentSelectedDept === d.id ? 'bg-brand-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}">
-                  ${d.name}
-                </button>
-              `).join('')}
-            </div>
-
-            <!-- Reagent Guard Strip (Dynamic based on Dept) -->
-            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 border-b border-slate-100 pb-2 w-full">
-                  <i data-lucide="beaker" class="w-4 h-4 text-brand-600"></i>
-                  <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (خاص بـ ${user.facility_name})</h3>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                ${displayedReagents.length === 0 ? '<p class="text-xs text-slate-400 col-span-full p-2">لا توجد محاليل مسجلة لهذا القسم.</p>' : displayedReagents.map(r => {
-                  const isAvailable = isCentral ? r.avail_central : r.avail_spec;
-                  return `
-                  <button onclick="toggleReagent('${r.id}')" class="p-2.5 rounded-2xl border text-right transition flex flex-col justify-between ${
-                    isAvailable 
-                      ? 'bg-emerald-50/50 hover:bg-emerald-100/50 border-emerald-200 text-emerald-950' 
-                      : 'bg-rose-50 hover:bg-rose-100/60 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
-                  }">
-                    <span class="text-[11px] font-bold block leading-tight">${r.name}</span>
-                    <div class="mt-2 flex items-center justify-between text-[10px] font-extrabold">
-                      <span class="${isAvailable ? 'text-emerald-700' : 'text-rose-700'}">
-                        ${isAvailable ? '● متوفر' : '✖ نافذ'}
-                      </span>
-                      <span class="text-[9px] text-slate-400 font-normal">تبديل</span>
-                    </div>
-                  </button>
-                `}).join('')}
-              </div>
-            </div>
-          `}
-
-          ${hospitalActiveTab === 'manager' ? `
-            <!-- KPI Cards for Manager -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-                <div>
-                  <p class="text-xs font-semibold text-slate-500">عينات واردة بالطريق</p>
-                  <p class="text-2xl font-black text-amber-600 mt-1">${kpiSent}</p>
-                </div>
-                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="truck" class="w-5 h-5"></i></div>
-              </div>
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-                <div>
-                  <p class="text-xs font-semibold text-slate-500">استلمت بالمستشفى</p>
-                  <p class="text-2xl font-black text-blue-600 mt-1">${kpiReceived}</p>
-                </div>
-                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="inbox" class="w-5 h-5"></i></div>
-              </div>
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-                <div>
-                  <p class="text-xs font-semibold text-slate-500">قيد الفحص</p>
-                  <p class="text-2xl font-black text-indigo-600 mt-1">${kpiTesting}</p>
-                </div>
-                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="microscope" class="w-5 h-5"></i></div>
-              </div>
-              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-                <div>
-                  <p class="text-xs font-semibold text-slate-500">تم الفحص (معتمد)</p>
-                  <p class="text-2xl font-black text-emerald-600 mt-1">${kpiCompleted}</p>
-                </div>
-                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Samples Table -->
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                  <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
-                  <span>${hospitalActiveTab === 'doctor' ? 'النتائج والتقارير الطبية للمرضى (التي طلبتها)' : 'قائمة عينات المختبر الداخلي (Worklist)'}</span>
-                </h2>
-                <span class="text-xs text-slate-400 mt-1 block">العينات: ${samples.length}</span>
-              </div>
-              
-              <!-- فلتر موقع القدوم للأخصائي -->
-              ${hospitalActiveTab === 'specialist' ? `
-                <select onchange="hospitalSenderFilter = this.value; renderApp()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-brand-500">
-                  <option value="All">فرز </option>
-                  ${Array.from(new Set(hospitalSamples.map(s => s.sender_facility))).map(f => `<option value="${f}" ${hospitalSenderFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
-                </select>
-              ` : ''}
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-right text-xs">
-                <thead class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
-                  <tr>
-                    <th class="p-4">الباركود</th>
-                    <th class="p-4">الجهة المرسلة</th>
-                    <th class="p-4">القسم ونوع الفحص</th>
-                    <th class="p-4">المريض / المستفيد</th>
-                    <th class="p-4">الملاحظات والاستمارة</th>
-                    <th class="p-4">الحالة الحالية</th>
-                    ${hospitalActiveTab === 'specialist' ? '<th class="p-4 text-center">تعديل الحالة</th>' : ''}
-                    <th class="p-4 text-center">النتيجة</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  ${samples.length === 0 ? `
-                    <tr><td colspan="${hospitalActiveTab === 'specialist' ? '8' : '7'}" class="p-10 text-center text-slate-400">لا توجد عينات مطابقة.</td></tr>
-                  ` : samples.map(s => {
-                    const manual = s.is_manual || getManualTestType(s.test_type);
-                    const isDr = s.selected_tests && s.selected_tests.length > 0;
-                    return `
-                      <tr class="hover:bg-slate-50/70 transition ${s.status === 'Completed' ? 'completed-row' : ''}">
-                        <td class="p-4 font-black font-mono text-brand-700 text-sm">${s.sample_id}</td>
-                        <td class="p-4 font-bold text-slate-800">${s.sender_facility}</td>
-                        <td class="p-4">
-                          <span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px] block w-max">${s.department}</span>
-                          <span class="font-bold text-slate-900 mt-1 block">${s.test_type}</span>
-                        </td>
-                        <td class="p-4 font-semibold text-slate-700">${s.patient_ref}</td>
-                        
-                        <td class="p-4 max-w-xs">
-                          ${s.notes ? `
-                            <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 mb-1 line-clamp-2">
-                              ${s.notes}
-                            </p>
-                          ` : ''}
-
-                          <div class="flex items-center gap-1.5 flex-wrap">
-                            ${isDr ? `
-                              <button onclick="viewDr0006Sheet('${s.sample_id}')" class="text-[10px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-2 py-0.5 rounded border border-brand-200 transition flex items-center gap-1">
-                                <i data-lucide="check-square" class="w-3 h-3"></i>
-                                <span>استمارة DR-0006 (${s.selected_tests.length} فحص)</span>
-                              </button>
-                            ` : ''}
-
-                            ${s.attachment_name ? `
-                              <button onclick="previewFile('${s.attachment_name}', '${s.sample_id}')" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 transition">
-                                <i data-lucide="paperclip" class="w-3 h-3"></i>
-                                <span>${s.attachment_name}</span>
-                              </button>
-                            ` : ''}
-                          </div>
-                        </td>
-
-                        <td class="p-4">
-                          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_MAP[s.status]?.color || ''}">
-                            ${STATUS_MAP[s.status]?.label || s.status}
-                          </span>
-                          <div class="text-[10px] text-slate-400 mt-1">${s.current_location}</div>
-                        </td>
-
-                        ${hospitalActiveTab === 'specialist' ? `
-                          <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                              ${s.status === 'Sent' ? `
-                                <button onclick="changeSampleState('${s.sample_id}', 'Received')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
-                                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                  <span>تأكيد الاستلام</span>
-                                </button>
-                              ` : s.status === 'Received' ? `
-                                <button onclick="changeSampleState('${s.sample_id}', 'In-Testing')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
-                                  <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                                  <span>بدء الفحص</span>
-                                </button>
-                              ` : s.status === 'In-Testing' ? `
-                                <button onclick="autoProcessIncomingBarcode('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs">
-                                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                  <span>إنجاز آلي (الجهاز)</span>
-                                </button>
-                              ` : `
-                                <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                  مكتمل الفحص
-                                </span>
-                              `}
-                            </div>
-                          </td>
-                        ` : ''}
-
-                        <td class="p-4 text-center">
-                          ${s.status === 'Completed' ? `
-                            <button onclick="showResultModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto shadow-xs">
-                              <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
-                              <span>عرض التقرير</span>
-                            </button>
-                          ` : (manual && hospitalActiveTab === 'specialist') ? `
-                            <button onclick="openManualEntryModal('${s.sample_id}')" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 mx-auto shadow-xs">
-                              <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                              <span>إدخال النتيجة</span>
-                            </button>
-                          ` : `
-                            <span class="text-[10px] font-bold text-slate-500">لا توجد نتيجة</span>
-                          `}
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div>
-      `;
-    }
-
-    function filterByDept(dept) {
-      currentSelectedDept = dept;
-      renderApp();
-    }
-
-    /* ==========================================================================
-       8. DASHBOARD: LIS SYSTEM (TECHNICAL INTERFACE)
-       ========================================================================== */
-    function renderLisDashboard(user) {
-      const samples = db.getSamples();
-      
-      // العينات التي تخص LIS (محلياً أو عينات مستلمة منه)
-      const expectedSamples = samples.filter(s => s.sender_facility === user.facility_name || s.status === 'Sent');
-      
-      // ترتيب بحيث يظهر الـ Pending في الأعلى
-      expectedSamples.sort((a, b) => {
-        const weights = { 'Pending': 1, 'Sent': 2, 'Received': 3, 'In-Testing': 4, 'Completed': 5 };
-        return (weights[a.status] || 6) - (weights[b.status] || 6);
-      });
-
-      return `
-        <div class="space-y-6">
-          <div class="bg-[#0f172a] text-slate-300 p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-700">
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-xl font-black text-white font-mono uppercase">LIS Control Terminal</h1>
-                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <i class="w-3 h-3 inline-block" data-lucide="server"></i> Connected
-                </span>
-              </div>
-              <p class="text-xs text-slate-400 mt-1 font-mono">
-                System Administrator: <span class="text-indigo-400">${user.name}</span> | Network: LabNexus Gateway
-              </p>
-            </div>
-
-            <div class="flex items-center gap-3 flex-wrap">
-              <button onclick="startLisRpaSync()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-[0_0_15px_rgba(79,70,229,0.4)] border border-indigo-400 font-mono">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                <span>RUN RPA SYNC [F5]</span>
-              </button>
-              <button onclick="openNewSampleModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-600 font-mono">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>CREATE LOCAL ORDER</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>
-                <span>LIS Unified Worklist (Integration Queue)</span>
-              </h2>
-              <span class="text-[11px] font-bold text-slate-500 bg-slate-200 px-2 py-1 rounded">Total: ${expectedSamples.length}</span>
-            </div>
-            
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs lis-table" dir="ltr">
-                <thead>
-                  <tr>
-                    <th>ACCESSION #</th>
-                    <th>SOURCE / DEST</th>
-                    <th>PATIENT ID</th>
-                    <th>TEST NAME</th>
-                    <th>SYNC STATUS</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  ${expectedSamples.length === 0 ? `
-                    <tr><td colspan="5" class="p-8 text-center text-slate-400 font-mono">NO DATA IN QUEUE.</td></tr>
-                  ` : expectedSamples.map(s => {
-                    let badgeClass = "bg-slate-100 text-slate-600";
-                    let statusText = s.status;
-                    if(s.status === 'Pending') { badgeClass = "bg-amber-100 text-amber-800 border border-amber-200"; statusText = "LOCAL_PENDING"; }
-                    if(s.status === 'Sent') { badgeClass = "bg-blue-100 text-blue-800 border border-blue-200"; statusText = "AWAITING_LIS_MATCH"; }
-                    if(s.status === 'Received') { badgeClass = "bg-indigo-100 text-indigo-800 border border-indigo-200"; statusText = "SYNCED_IN_LAB"; }
-                    if(s.status === 'Completed') { badgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200"; statusText = "VALIDATED"; }
-                    
-                    return `
-                    <tr class="hover:bg-slate-50 transition">
-                      <td class="font-mono font-bold text-indigo-700">${s.sample_id}</td>
-                      <td>
-                        <div class="font-bold text-slate-800">${s.sender_facility}</div>
-                        <div class="text-[10px] text-slate-400">➔ ${s.assigned_lab}</div>
-                      </td>
-                      <td class="font-semibold">${s.patient_ref}</td>
-                      <td class="font-bold text-slate-700">${s.test_type}</td>
-                      <td>
-                        <span class="px-2 py-1 rounded font-bold font-mono text-[10px] ${badgeClass}">${statusText}</span>
-                      </td>
-                    </tr>
-                  `}).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    /* ==========================================================================
-       9. DASHBOARD: SENDER (REHAB, PRISON)
-       ========================================================================== */
-
-    function renderSenderDashboard(user) {
-      const samples = db.getSamples().filter(s => s.sender_facility === user.facility_name);
-      const isRehab = user.facility_name.includes("التأهيل");
-      const isPrison = user.facility_name.includes("سجن");
-
-      // ترتيب بحيث المكتمل ينزل تحت
-      samples.sort((a, b) => {
-        const weights = { 'In-Testing': 1, 'Received': 2, 'Pending': 3, 'Sent': 4, 'Completed': 5 };
-        return (weights[a.status] || 6) - (weights[b.status] || 6);
-      });
-
-      return `
-        <div class="space-y-6">
-          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isRehab ? 'bg-purple-100 text-purple-800' : isPrison ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
-                  ${isRehab ? 'مركز رعاية وتأهيل' : isPrison ? 'قطاع السجون والإصلاحيات' : ''}
-                </span>
-              </div>
-              <p class="text-xs text-slate-500 mt-1">
-                المسؤول: <span class="font-bold text-slate-700">${user.name}</span> | توجيه العينات وحفظ النتائج سحابياً
-              </p>
-            </div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-              <button onclick="openNewSampleModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md shadow-brand-500/20">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>+ تسجيل وإرسال عينة جديدة</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                  <i data-lucide="route" class="w-4 h-4 text-brand-600"></i>
-                  <span>شحنات العينات الصادرة والتتبع المباشر</span>
-                </h2>
-                <p class="text-xs text-slate-400 mt-0.5">تتحدث النتيجة وتتحول الحالة إلى "تم الفحص" فور اعتماد الأخصائي أو قراءة الجهاز</p>
-              </div>
-              <span class="text-xs text-slate-500 font-bold">العينات: ${samples.length}</span>
-            </div>
-
-            <div class="divide-y divide-slate-100">
-              ${samples.length === 0 ? `
-                <div class="p-12 text-center text-slate-400">لا توجد عينات مسجلة حالياً لهذه الجهة. اضغط بالأعلى لإرسال عينة جديدة.</div>
-              ` : samples.map(s => {
-                const curStep = s.status === 'Pending' ? 0 : s.status === 'Sent' ? 1 : s.status === 'Received' ? 2 : s.status === 'In-Testing' ? 3 : 4;
-                const steps = ["تم الإرسال", "استلام بالمستشفى", "قيد الفحص", "تم الفحص"];
-                const isDr = s.selected_tests && s.selected_tests.length > 0;
-
-                return `
-                  <div class="p-6 hover:bg-slate-50/50 transition space-y-4 ${s.status === 'Completed' ? 'completed-row' : ''}">
-                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div class="space-y-1.5">
-                        <div class="flex items-center gap-2 flex-wrap">
-                          <span class="font-black text-sm font-mono text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">${s.sample_id}</span>
-                          <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded font-bold">${s.patient_ref}</span>
-                          <span class="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-semibold">قسم: ${s.department}</span>
-                          <span class="text-xs text-slate-400">${s.created_at}</span>
-                        </div>
-                        <div class="text-xs text-slate-700">
-                          <span class="font-bold text-slate-900">الفحص المطلوب:</span> ${s.test_type} | 
-                          <span class="font-bold text-slate-900">الوجهة (المستشفى):</span> ${s.assigned_lab}
-                        </div>
-
-                        ${s.notes ? `
-                          <div class="text-xs text-slate-600 bg-amber-50/60 border border-amber-200/60 p-2.5 rounded-xl max-w-xl">
-                            <span class="font-bold text-amber-900">تفاصيل الاستمارة:</span> ${s.notes}
-                          </div>
-                        ` : ''}
-
-                        <div class="flex items-center gap-2 pt-1 flex-wrap">
-                          ${isDr ? `
-                            <button onclick="viewDr0006Sheet('${s.sample_id}')" class="text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-1 rounded-lg border border-brand-200 inline-flex items-center gap-1.5 transition">
-                              <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
-                              <span>عرض استمارة DR-0006 (${s.selected_tests.length} فحص)</span>
-                            </button>
-                          ` : ''}
-
-                          ${s.attachment_name ? `
-                            <button onclick="previewFile('${s.attachment_name}', '${s.sample_id}')" class="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200 inline-flex items-center gap-1.5 transition">
-                              <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                              <span>المستند المرفق: ${s.attachment_name}</span>
-                            </button>
-                          ` : ''}
-                        </div>
-                      </div>
-
-                      <div>
-                        ${s.status === 'Completed' ? `
-                          <button onclick="showResultModal('${s.sample_id}')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20">
-                            <i data-lucide="file-check-2" class="w-4 h-4"></i>
-                            <span>عرض النتيجة المخبرية المعتمدة</span>
-                          </button>
-                        ` : `
-                          <span class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                            ${s.current_location}
-                          </span>
-                        `}
-                      </div>
-                    </div>
-
-                    <div class="pt-2">
-                      <div class="grid grid-cols-4 gap-2">
-                        ${steps.map((label, idx) => {
-                          const stepNum = idx + 1;
-                          const isDone = curStep >= stepNum;
-                          return `
-                            <div class="flex flex-col items-center text-center">
-                              <div class="w-full h-1.5 rounded-full ${isDone ? 'bg-brand-600' : 'bg-slate-200'} mb-2"></div>
-                              <span class="text-[11px] font-bold ${isDone ? 'text-slate-800' : 'text-slate-400'}">${label}</span>
-                            </div>
-                          `;
-                        }).join('')}
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    /* ==========================================================================
-       10. BLOOD BANK (HEMATOS) DASHBOARD
-       ========================================================================== */
-
-    function renderBloodBankDashboard(user) {
-      const inventory = db.getBloodInventory();
-      const samples = db.getSamples().filter(s => s.department === 'BloodBank');
-      samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
-
-      return `
-        <div class="space-y-6">
-          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-            <h1 class="text-xl font-black text-slate-900 flex items-center gap-2">
-              <i data-lucide="droplet" class="w-6 h-6 text-rose-600"></i> ${user.facility_name}
-            </h1>
-            <p class="text-xs text-slate-500 mt-1">نظام Hematos لإدارة المخزون وتلبية طلبات النقل (العيادات و العمليات)</p>
-          </div>
-
-          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
-            <h3 class="font-bold text-slate-900 text-xs mb-3">المخزون الحالي لوحدات الدم</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              ${inventory.map(b => `
-                <div class="p-4 rounded-xl border border-rose-100 bg-rose-50 flex items-center justify-between">
-                  <span class="font-extrabold text-rose-700 text-lg" dir="ltr">${b.type}</span>
-                  <span class="text-xs font-bold bg-white px-2 py-1 rounded-md text-rose-900 shadow-sm">${b.count} كيس</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div class="p-5 border-b border-slate-100">
-              <h2 class="font-bold text-slate-800 text-sm">طلبات نقل الدم الواردة (Blood Requests)</h2>
-            </div>
-            <div class="divide-y divide-slate-100">
-              ${samples.length === 0 ? '<div class="p-8 text-center text-slate-400 text-xs">لا توجد طلبات معلقة.</div>' : samples.map(s => `
-                <div class="p-4 hover:bg-slate-50 transition flex items-center justify-between ${s.status === 'Completed' ? 'completed-row' : ''}">
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-mono text-brand-700 font-bold">${s.sample_id}</span>
-                      <span class="text-xs font-bold text-slate-700">${s.patient_ref}</span>
-                      <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">${s.notes}</span>
-                    </div>
-                    <div class="text-xs text-slate-500 mt-1">الجهة: ${s.sender_facility} | المطلوب: ${s.test_type}</div>
-                  </div>
-                  <div>
-                    ${s.status === 'Sent' ? `
-                      <button onclick="approveBloodRequest('${s.sample_id}')" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition">
-                        تأكيد المطابقة وصرف الكيس
-                      </button>
-                    ` : `<span class="text-xs text-emerald-700 font-bold"><i data-lucide="check" class="w-4 h-4 inline"></i> تم الصرف</span>`}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function approveBloodRequest(sampleId) {
-      const samples = db.getSamples();
-      const s = samples.find(x => x.sample_id === sampleId);
-      if(s) {
-        s.status = 'Completed';
-        s.current_location = 'تم صرف الوحدة للمريض';
-        db.saveSamples(samples);
-        db.addLog(`HEMATOS >> Blood request ${sampleId} approved and unit dispatched.`);
-        showToast("تم اعتماد طلب الدم وصرف الكيس للعيادة", "success");
-        renderApp();
-      }
-    }
-
-    /* ==========================================================================
-       11. NEW SAMPLE MODAL (WITH SMART INVENTORY ROUTING)
-       ========================================================================== */
-    function toggleDrCategory(catId, isChecked) {
-      document.querySelectorAll(`input[data-cat="${catId}"]`).forEach(cb => { cb.checked = isChecked; });
-    }
-
-    function openNewSampleModal() {
-      const user = db.getUser();
-      const randomCode = 'SMP-' + (user.facility_name.includes("التأهيل") ? 'RHB-' : user.facility_name === LIS_NAME ? 'LIS-' : 'BRY-') + Math.floor(1000 + Math.random() * 9000);
-      
-      const load1 = getHospitalLoad(PRIMARY_HOSPITAL_NAME);
-      const load2 = getHospitalLoad(SPECIALIST_HOSPITAL_NAME);
-      const isLis = user.facility_name === LIS_NAME;
-      const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
-
-      openModal(`
-        <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h3 class="font-extrabold text-slate-900 text-sm">${isLis ? 'إنشاء طلب محلي (Local LIS Order)' : 'تسجيل عينة وإرسالها'}</h3>
-              <p class="text-[11px] text-slate-400">الجهة الطالبة: ${user.facility_name}</p>
-            </div>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-
-          <form onsubmit="handleCreateSample(event)" class="space-y-3.5 text-xs">
-            
-            <!-- Load Balancer & Smart Routing (Hidden for LIS and Doctors) -->
-            <div id="routing-container" class="${(isDoctorOrdering || isLis) ? 'hidden' : 'block'} bg-slate-50 border border-brand-200 rounded-xl p-4 space-y-2 mb-2">
-              <label class="block font-bold text-slate-800 text-xs mb-1 flex items-center gap-1.5">
-                <i data-lucide="activity" class="w-4 h-4 text-brand-600"></i> توجيه العينة حسب موزع الأحمال وتوفر المخزون
-              </label>
-              <div class="grid grid-cols-2 gap-2">
-                <label id="lbl-central" class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex flex-col items-start gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <input type="radio" id="rad-central" name="dest_hospital" value="${PRIMARY_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5" checked>
-                    <span class="font-bold text-[11px] text-slate-800">المركزي</span>
-                  </div>
-                  <span class="text-[9px] px-2 py-0.5 rounded-lg border ${load1.color} w-full text-center">${load1.text}</span>
-                </label>
-                <label id="lbl-specialist" class="border border-slate-200 p-2.5 rounded-xl cursor-pointer hover:bg-white bg-white/50 transition flex flex-col items-start gap-1.5">
-                  <div class="flex items-center gap-2">
-                    <input type="radio" id="rad-specialist" name="dest_hospital" value="${SPECIALIST_HOSPITAL_NAME}" class="accent-brand-600 w-3.5 h-3.5">
-                    <span class="font-bold text-[11px] text-slate-800">التخصصي</span>
-                  </div>
-                  <span class="text-[9px] px-2 py-0.5 rounded-lg border ${load2.color} w-full text-center">${load2.text}</span>
-                </label>
-              </div>
-              <div id="reagent-blocked-banner" class="hidden mt-2 p-2.5 rounded-lg text-[10px] font-bold"></div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">باركود العينة</label>
-                <input id="new-smp-id" type="text" value="${randomCode}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono text-brand-700" readonly>
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">اسم المريض / المستفيد</label>
-                <input id="new-pat-ref" type="text" placeholder="مثال: عبدالرحمن ناصر المنصور" required class="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500">
-              </div>
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">قسم المختبر (Department)</label>
-              <select id="new-dept-select" onchange="updateTestTypes(this.value)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white">
-                <option value="">-- اختر القسم --</option>
-                ${LAB_DEPARTMENTS.filter(d => d.id !== 'BloodBank').map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
-              </select>
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">نوع الفحص المطلوب</label>
-              <select id="new-test-type" onchange="onTestTypeChanged(this)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-800">
-                <option value="">-- يرجى اختيار القسم أولاً --</option>
-              </select>
-            </div>
-
-            <!-- استمارة DR-0006 المطابقة للورقة -->
-            <div id="dr0006-checklist-container" class="hidden bg-slate-50 border border-slate-300 rounded-xl p-4 space-y-3">
-              <div class="border-b border-slate-300 pb-2">
-                <span class="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                  <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
-                  نموذج الفحوصات الشاملة (DR-0006)
-                </span>
-                <p class="text-[10px] text-slate-500 mt-0.5">اضغط على اسم القسم لتحديد كافة التحاليل التابعة له، أو اختر يدوياً.</p>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px]" dir="ltr">
-                ${DR0006_FORM_STRUCTURE.map(col => `
-                  <div class="space-y-4">
-                    ${col.categories.map(cat => `
-                      <div class="border border-slate-200 bg-white rounded-md overflow-hidden shadow-sm">
-                        <label class="font-bold text-slate-800 bg-slate-100 flex items-center gap-2 px-2 py-1.5 border-b border-slate-200 cursor-pointer hover:bg-slate-200 transition">
-                          <input type="checkbox" onclick="toggleDrCategory('${cat.id}', this.checked)" class="accent-brand-600 w-3.5 h-3.5">
-                          ${cat.name}
-                        </label>
-                        <div class="p-2 space-y-1.5 bg-white max-h-60 overflow-y-auto">
-                          ${cat.tests.map(test => `
-                            <label class="flex items-center gap-2 cursor-pointer hover:text-brand-700 transition">
-                              <input type="checkbox" name="dr_test_box" data-cat="${cat.id}" value="${test}" class="accent-brand-600 w-3.5 h-3.5">
-                              <span class="font-semibold text-slate-600">${test}</span>
-                            </label>
-                          `).join('')}
-                        </div>
-                      </div>
-                    `).join('')}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-
-            <div class="${user.role === 'specialist' ? 'block' : 'hidden'}">
-              <label class="block font-bold text-slate-700 mb-1">المستشفى المرجعي المستقبل</label>
-              <input type="text" value="${user.facility_name}" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-bold cursor-not-allowed">
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">
-                <i data-lucide="message-square-text" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i> ملاحظات سريرية
-              </label>
-              <textarea id="new-notes" rows="2" placeholder="اكتب هنا أي تفاصيل طبية خاصة بالحالة أو الفحوصات..." class="w-full p-2.5 border border-slate-200 rounded-xl"></textarea>
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">
-                <i data-lucide="paperclip" class="w-3.5 h-3.5 inline-block text-brand-600 ml-1"></i> إرفاق تقرير طبي (PDF أو صورة)
-              </label>
-              <div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center hover:bg-slate-50 transition cursor-pointer relative">
-                <input type="file" id="new-file" onchange="updateFileLabel(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                <div class="space-y-1">
-                  <i data-lucide="upload-cloud" class="w-5 h-5 mx-auto text-slate-400"></i>
-                  <p class="text-[11px] text-slate-600 font-semibold" id="file-label-text">اضغط لاختيار المستند الطبي المرفق</p>
-                  <p class="text-[9px] text-slate-400">لن يُسمح بأي تعديل أو مرفقات إضافية بعد الإرسال</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="pt-2 flex justify-end gap-2">
-              <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">إلغاء</button>
-              <button type="submit" id="btn-submit-sample" class="px-5 py-2 ${isLis ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-mono' : 'bg-brand-600 hover:bg-brand-700 text-white'} rounded-xl font-bold shadow-md flex items-center gap-1.5">
-                <i data-lucide="${isLis ? 'save' : 'send'}" class="w-4 h-4"></i>
-                <span>${isLis ? 'SAVE TO LOCAL LIS (PENDING)' : 'تأكيد الطلب / الإرسال'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      `);
-      lucide.createIcons();
-    }
-
-    function updateTestTypes(dept) {
-      const select = document.getElementById('new-test-type');
-      if(!dept) {
-        select.innerHTML = '<option value="">-- يرجى اختيار القسم أولاً --</option>';
-        return;
-      }
-      
-      const reagents = db.getReagents().filter(r => r.dept === dept);
-      
-      select.innerHTML = '<option value="">-- اضغط لاختيار الفحص --</option>' +
-          reagents.map(r => {
-            const c = r.avail_central;
-            const s = r.avail_spec;
-            let statusText = "";
-            let disabled = false;
-
-            if (c && s) statusText = "";
-            else if (c && !s) statusText = " [متوفر بالمركزي فقط]";
-            else if (!c && s) statusText = " [متوفر بالتخصصي فقط]";
-            else { statusText = " [✖ نافذ كلياً]"; disabled = true; }
-
-            return `<option value="${r.name}" data-c="${c}" data-s="${s}" ${disabled ? 'disabled' : ''}>${r.name} ${r.is_manual ? '🔬 [يدوي]' : ''}${statusText}</option>`;
-          }).join('');
-      
-      // إخفاء استمارة DR 
-      const drContainer = document.getElementById('dr0006-checklist-container');
-      if (drContainer) drContainer.classList.add('hidden');
-      
-      // إخفاء تنبيه الكواشف
-      const banner = document.getElementById('reagent-blocked-banner');
-      if (banner) banner.classList.add('hidden');
-    }
-
-    function onTestTypeChanged(selectElem) {
-      const testName = selectElem.value;
-      const isDr = testName.includes("DR-0006") || testName.includes("تحاليل دم");
-      const drContainer = document.getElementById('dr0006-checklist-container');
-      if (drContainer) {
-        if (isDr) drContainer.classList.remove('hidden');
-        else drContainer.classList.add('hidden');
-      }
-      
-      // Smart Routing Logic
-      const opt = selectElem.options[selectElem.selectedIndex];
-      if (!opt || !opt.value) return;
-
-      const c = opt.getAttribute('data-c') === 'true';
-      const s = opt.getAttribute('data-s') === 'true';
-      
-      const banner = document.getElementById('reagent-blocked-banner');
-      const radCentral = document.getElementById('rad-central');
-      const radSpec = document.getElementById('rad-specialist');
-      const lblCentral = document.getElementById('lbl-central');
-      const lblSpec = document.getElementById('lbl-specialist');
-      const submitBtn = document.getElementById('btn-submit-sample');
-
-      if (!radCentral || !radSpec) return; // if hidden (LIS or Doctor)
-
-      // إعادة التفعيل
-      radCentral.disabled = false; radSpec.disabled = false;
-      lblCentral.classList.remove('opacity-40'); lblSpec.classList.remove('opacity-40');
-      submitBtn.disabled = false; submitBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-
-      if (c && s) {
-        banner.classList.add('hidden');
-      } else if (c && !s) {
-        banner.classList.remove('hidden');
-        banner.className = "mt-2 p-2.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-start gap-1.5";
-        banner.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i> <span>بناءً على مخزون المحاليل اللحظي، هذا الفحص متوفر في <b>(المركزي)</b> فقط. تم توجيه العينة له حصراً.</span>`;
-        radSpec.disabled = true; radCentral.checked = true;
-        lblSpec.classList.add('opacity-40');
-      } else if (!c && s) {
-        banner.classList.remove('hidden');
-        banner.className = "mt-2 p-2.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-start gap-1.5";
-        banner.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i> <span>بناءً على مخزون المحاليل اللحظي، هذا الفحص متوفر في <b>(التخصصي)</b> فقط. تم توجيه العينة له حصراً.</span>`;
-        radCentral.disabled = true; radSpec.checked = true;
-        lblCentral.classList.add('opacity-40');
-      } else {
-        banner.classList.remove('hidden');
-        banner.className = "mt-2 p-2.5 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-start gap-1.5";
-        banner.innerHTML = `<i data-lucide="alert-octagon" class="w-4 h-4 shrink-0"></i> <span>المحلول الخاص بهذا الفحص نافذ كلياً في كلا المستشفيين. لا يمكن الطلب.</span>`;
-        submitBtn.disabled = true; submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
-      }
-      lucide.createIcons();
-    }
-
-    function openBloodRequestModal() {
-      const randomCode = 'BLD-' + Math.floor(1000 + Math.random() * 9000);
-      openModal(`
-        <div class="p-6 space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-              <i data-lucide="droplet" class="w-4 h-4 text-rose-600"></i> نموذج طلب نقل دم (Hematos)
-            </h3>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-          </div>
-          <form onsubmit="handleBloodRequest(event)" class="space-y-3.5 text-xs">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold mb-1">رقم الطلب</label>
-                <input id="bld-req-id" value="${randomCode}" readonly class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-rose-700">
-              </div>
-              <div>
-                <label class="block font-bold mb-1">اسم المريض</label>
-                <input id="bld-pat" type="text" required class="w-full px-3 py-2 border rounded-xl">
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold mb-1">العيادة الطالبة</label>
-                <select id="bld-clinic" class="w-full px-3 py-2 border rounded-xl">
-                  <option value="ER">طوارئ (ER)</option>
-                  <option value="OR">عمليات (OR)</option>
-                  <option value="ICU">عناية مركزة (ICU)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block font-bold mb-1">الأولوية الطبية (Priority)</label>
-                <select id="bld-priority" class="w-full px-3 py-2 border rounded-xl">
-                  <option value="Type & Screen (T&S)">Type & Screen (T&S)</option>
-                  <option value="Routine Transfusion">Routine Transfusion</option>
-                  <option value="URGENT (STAT)">URGENT (STAT)</option>
-                  <option value="Emergency Release">Emergency Release</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block font-bold mb-1">المشتقات المطلوبة</label>
-              <select id="bld-product" class="w-full px-3 py-2 border rounded-xl">
-                <option value="Packed RBCs">Packed RBCs</option>
-                <option value="Whole Blood">Whole Blood</option>
-                <option value="FFP">Fresh Frozen Plasma (FFP)</option>
-                <option value="Platelets">Platelets</option>
-                <option value="Blood Grouping & Crossmatching">فصيلة وتطابق الدم (فقط)</option>
-              </select>
-            </div>
-            <div class="pt-2 flex justify-end">
-              <button type="submit" class="px-5 py-2 bg-rose-600 text-white rounded-xl font-bold">إرسال الطلب لبنك الدم</button>
-            </div>
-          </form>
-        </div>
-      `);
-      lucide.createIcons();
-    }
-
-    function handleBloodRequest(e) {
-      e.preventDefault();
-      const newSample = {
-        sample_id: document.getElementById('bld-req-id').value,
-        patient_ref: document.getElementById('bld-pat').value,
-        department: "BloodBank",
-        test_type: document.getElementById('bld-product').value,
-        sender_facility: db.getUser().facility_name,
-        assigned_lab: BLOOD_BANK_NAME,
-        current_location: "بانتظار موافقة بنك الدم",
-        status: "Sent",
-        created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        notes: `العيادة: ${document.getElementById('bld-clinic').value} | الأولوية: ${document.getElementById('bld-priority').value}`,
-        ordered_by: db.getUser().name
-      };
-      const samples = db.getSamples();
-      samples.unshift(newSample);
-      db.saveSamples(samples);
-      closeModal();
-      renderApp();
-      showToast("تم تحويل الطلب لبنك الدم", "success");
-    }
-
-    function updateFileLabel(input) {
-      const lbl = document.getElementById('file-label-text');
-      if (input.files && input.files[0]) {
-        lbl.innerHTML = `<span class="text-brand-700 font-bold">تم اختيار: ${input.files[0].name}</span>`;
-      }
-    }
-
-    function handleCreateSample(e) {
-      e.preventDefault();
-      const user = db.getUser();
-      const smpId = document.getElementById('new-smp-id').value.trim();
-      const patRef = document.getElementById('new-pat-ref').value.trim();
-      const dept = document.getElementById('new-dept-select').value;
-      const testType = document.getElementById('new-test-type').value;
-      const notes = document.getElementById('new-notes').value.trim();
-
-      let selectedTests = [];
-      if (testType.includes("DR-0006") || testType.includes("تحاليل دم")) {
-        document.querySelectorAll('input[name="dr_test_box"]:checked').forEach(cb => {
-          selectedTests.push(cb.value);
-        });
-      }
-
-      const fileInput = document.getElementById('new-file');
-      const attachmentName = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : (selectedTests.length ? "استمارة_إحالة_DR0006.pdf" : null);
-      const manualType = getManualTestType(testType);
-
-      const isDoctorOrdering = user.role === 'specialist' && hospitalActiveTab === 'doctor';
-      const isLis = user.facility_name === LIS_NAME;
-
-      let assignedLab = PRIMARY_HOSPITAL_NAME;
-      let initStatus = "Sent";
-      let initLocation = "في الطريق إلى " + assignedLab;
-
-      if (isDoctorOrdering) {
-        assignedLab = user.facility_name;
-        initStatus = "Received";
-        initLocation = "تم الطلب من العيادة الداخلية";
-      } else if (isLis) {
-        assignedLab = "AWAITING RPA SYNC";
-        initStatus = "Pending";
-        initLocation = "محفوظة محلياً في نظام LIS";
-      } else {
-        const destRadio = document.querySelector('input[name="dest_hospital"]:checked');
-        if (destRadio) assignedLab = destRadio.value;
-        initLocation = "في الطريق إلى " + assignedLab;
-      }
-
-      const newSample = {
-        sample_id: smpId,
-        patient_ref: patRef,
-        department: dept,
-        test_type: testType,
-        is_manual: Boolean(manualType),
-        manual_type: manualType,
-        selected_tests: selectedTests,
-        sender_facility: user.facility_name,
-        assigned_lab: assignedLab,
-        current_location: initLocation,
-        status: initStatus,
-        created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        notes: notes || (selectedTests.length ? `تم اختيار ${selectedTests.length} فحص من استمارة DR-0006` : ''),
-        attachment_name: attachmentName,
-        result: null,
-        structured_data: null,
-        ordered_by: user.name
-      };
-
-      const samples = db.getSamples();
-      samples.unshift(newSample);
-      db.saveSamples(samples);
-
-      if (isLis) {
-        db.addLog(`LIS_LOCAL >> Barcode ${smpId} saved locally. Waiting for RPA Sync.`);
-        showToast(`تم حفظ العينة (${smpId}) في نظام LIS المحلي (بانتظار المزامنة)`, 'success');
-      } else {
-        db.addLog(`ORDER_PLACED >> Barcode ${smpId} (${testType}) routed to [${assignedLab}].`);
-        showToast(`تم إرسال العينة (${smpId}) بنجاح إلى (${assignedLab})!`, 'success');
-      }
-      
-      closeModal();
-      renderApp();
-    }
-
-    function renderAuthView() {
-      const root = document.getElementById('app-root');
-      root.innerHTML = `
-        <div class="max-w-md mx-auto my-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-4">
-          <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
-            <i data-lucide="shield-check" class="w-6 h-6"></i>
-          </div>
-          <h2 class="text-lg font-bold text-slate-900">تسجيل الدخول إلى LabNexus</h2>
-          <p class="text-xs text-slate-500">اختر المنشأة لاستعراض دورة الربط المخبري</p>
-          <div class="space-y-2 pt-2">
-            <button onclick="demoLogin('specialist')" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">دخول: مستشفى بريدة المركزي</button>
-            <button onclick="demoLogin('specialist2')" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">دخول: مستشفى الملك فهد التخصصي</button>
-            <button onclick="demoLogin('blood_bank')" class="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-xl text-xs font-bold transition">دخول: بنك الدم (Hematos)</button>
-            <button onclick="demoLogin('rehab_sender')" class="w-full py-2.5 px-4 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-xl text-xs font-bold transition">دخول: مركز التأهيل الشامل</button>
-            <button onclick="demoLogin('prison_sender')" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">دخول: عيادات السجن</button>
-            <button onclick="demoLogin('lis_sender')" class="w-full py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition">دخول: نظام إدارة المختبرات (LIS)</button>
-          </div>
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
     function previewFile(fileName, sampleId) {
       openModal(`
         <div class="p-6 space-y-4">
@@ -2576,9 +1564,7 @@
               <i data-lucide="file-text" class="w-6 h-6"></i>
             </div>
             <p class="text-xs font-bold text-slate-800">${fileName}</p>
-            <p class="text-[11px] text-slate-500 leading-relaxed">
-              تم إرفاق هذا المستند الطبي مع العينة ومطابقته رقمياً عند الإرسال. مقفل تماماً لمنع التعديل.
-            </p>
+            <p class="text-[11px] text-slate-500 leading-relaxed">تم إرفاق هذا المستند الطبي مع العينة ومطابقته رقمياً عند الإرسال. مقفل تماماً لمنع التعديل.</p>
           </div>
           <div class="flex justify-end">
             <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">إغلاق</button>
@@ -2598,7 +1584,7 @@
             <div class="flex items-center gap-2">
               <div class="p-2 bg-emerald-100 text-emerald-700 rounded-xl"><i data-lucide="file-check-2" class="w-5 h-5"></i></div>
               <div>
-                <h3 class="font-bold text-slate-900 text-sm">تقرير النتيجة المخبرية المعتمدة</h3>
+                <h3 class="font-bold text-slate-900 text-sm">النتيجة المخبرية المعتمدة</h3>
                 <span class="text-[10px] text-slate-400 font-mono">${s.sample_id}</span>
               </div>
             </div>
@@ -2607,8 +1593,8 @@
 
           <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <div><span class="text-slate-400">الباركود:</span> <b class="font-mono text-brand-700">${s.sample_id}</b></div>
-            <div><span class="text-slate-400">المريض / المستفيد:</span> <b>${s.patient_ref}</b></div>
-            <div><span class="text-slate-400">القسم:</span> <b>${s.department}</b></div>
+            <div><span class="text-slate-400">المريض:</span> <b>${s.patient_ref}</b></div>
+            <div><span class="text-slate-400">الجهة:</span> <b>${s.assigned_lab}</b></div>
             <div><span class="text-slate-400">الفحص:</span> <b>${s.test_type}</b></div>
           </div>
 
@@ -2630,10 +1616,6 @@
               </div>
               <div class="text-[11px] text-slate-600 pt-1 border-t border-slate-200">
                 <b>Comments:</b> ${s.structured_data.comments}
-              </div>
-              <div class="flex justify-between text-[10px] text-slate-500 pt-1">
-                <span>Reported: ${s.structured_data.reported_by}</span>
-                <span>Checked: ${s.structured_data.checked_by}</span>
               </div>
             </div>
           ` : s.structured_data && s.structured_data.template === 'worker_microbiology' ? `
@@ -2671,59 +1653,357 @@
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">التقرير السريري الصادر:</label>
               <div class="p-4 bg-emerald-50/60 text-slate-800 rounded-2xl font-sans text-xs leading-relaxed border border-emerald-200 whitespace-pre-line font-medium">
-                ${s.result || 'لا توجد نتيجة مسجلة حتى الآن.'}
+                ${s.result || 'تم الانتهاء والمصادقة على العينة بنجاح.'}
               </div>
             </div>
           `}
-
-          <div class="flex justify-end items-center pt-2 border-t border-slate-100 text-[11px]">
-            <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">إغلاق</button>
+          
+          <div class="flex justify-end pt-2 text-[11px]">
+            <button onclick="closeModal()" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold">إغلاق</button>
           </div>
         </div>
       `);
       lucide.createIcons();
     }
 
+    /* ==========================================================================
+       8. DASHBOARD VIEWS
+       ========================================================================== */
+
+    function renderHospitalDashboard(user) {
+      const allSamples = db.getSamples();
+      const reagents = db.getReagents();
+      const isCentral = user.facility_name === PRIMARY_HOSPITAL_NAME;
+
+      let hospitalSamples = allSamples.filter(s => s.assigned_lab === user.facility_name);
+      
+      if (hospitalActiveTab === 'doctor') {
+        hospitalSamples = hospitalSamples.filter(s => s.ordered_by === user.name);
+      }
+
+      if (hospitalActiveTab === 'specialist' && hospitalSenderFilter !== "All") {
+        hospitalSamples = hospitalSamples.filter(s => s.sender_facility === hospitalSenderFilter);
+      }
+      
+      hospitalSamples.sort((a, b) => {
+        const weights = { 'In-Testing': 1, 'Received': 2, 'Sent': 3, 'Completed': 4 };
+        return (weights[a.status] || 5) - (weights[b.status] || 5);
+      });
+
+      const getTabClass = (tab) => hospitalActiveTab === tab ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+
+      return `
+        <div class="space-y-6 animate-in fade-in duration-300">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
+              </div>
+              <div class="flex bg-slate-100 p-1 rounded-xl w-max">
+                <button onclick="hospitalActiveTab='manager'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('manager')}">المدير</button>
+                <button onclick="hospitalActiveTab='doctor'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('doctor')}">الطبيب</button>
+                <button onclick="hospitalActiveTab='specialist'; renderApp()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition ${getTabClass('specialist')}">الأخصائي والمخزون</button>
+              </div>
+            </div>
+            ${hospitalActiveTab === 'doctor' ? `
+              <div class="flex gap-2">
+                <button onclick="openNewSampleModal()" class="bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">طلب تحليل مخبري</button>
+                <button onclick="openBloodRequestModal()" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">طلب نقل دم</button>
+              </div>
+            ` : ''}
+          </div>
+
+          ${hospitalActiveTab === 'specialist' ? `
+            <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3">
+              <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <i data-lucide="beaker" class="w-4 h-4 text-brand-600"></i>
+                <h3 class="font-bold text-slate-900 text-xs">إدارة توفر المحاليل والكواشف (خاص بـ ${user.facility_name})</h3>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                ${reagents.map(r => {
+                  const isAvailable = isCentral ? r.avail_central : r.avail_specialist;
+                  return `
+                  <button onclick="toggleReagent('${r.id}')" class="p-2.5 rounded-2xl border text-right transition flex flex-col justify-between ${
+                    isAvailable ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-300 text-rose-900 ring-2 ring-rose-400/40'
+                  }">
+                    <span class="text-[11px] font-bold block leading-tight">${r.name}</span>
+                    <div class="mt-2 flex items-center justify-between text-[10px] font-extrabold">
+                      <span class="${isAvailable ? 'text-emerald-700' : 'text-rose-700'}">${isAvailable ? '● متوفر' : '✖ نافذ'}</span>
+                      <span class="text-[9px] text-slate-400 font-normal">تبديل</span>
+                    </div>
+                  </button>
+                `}).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${hospitalActiveTab === 'manager' ? `
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                <div><p class="text-xs font-semibold text-slate-500">عينات بالطريق</p><p class="text-2xl font-black text-amber-600 mt-1">${hospitalSamples.filter(s=>s.status==='Sent').length}</p></div>
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="truck" class="w-5 h-5"></i></div>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                <div><p class="text-xs font-semibold text-slate-500">استلمت</p><p class="text-2xl font-black text-blue-600 mt-1">${hospitalSamples.filter(s=>s.status==='Received').length}</p></div>
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="inbox" class="w-5 h-5"></i></div>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                <div><p class="text-xs font-semibold text-slate-500">قيد الفحص</p><p class="text-2xl font-black text-indigo-600 mt-1">${hospitalSamples.filter(s=>s.status==='In-Testing').length}</p></div>
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i data-lucide="microscope" class="w-5 h-5"></i></div>
+              </div>
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+                <div><p class="text-xs font-semibold text-slate-500">مكتمل</p><p class="text-2xl font-black text-emerald-600 mt-1">${hospitalSamples.filter(s=>s.status==='Completed').length}</p></div>
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="w-4 h-4 text-brand-600"></i>
+                <span>قائمة عينات المختبر الداخلي (Worklist)</span>
+              </h2>
+              ${hospitalActiveTab === 'specialist' ? `
+                <select onchange="hospitalSenderFilter = this.value; renderApp()" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-brand-500">
+                  <option value="All">الكل (فرز حسب المرسل)</option>
+                  ${Array.from(new Set(allSamples.filter(s => s.assigned_lab === user.facility_name).map(s => s.sender_facility))).map(f => `<option value="${f}" ${hospitalSenderFilter === f ? 'selected' : ''}>${f}</option>`).join('')}
+                </select>
+              ` : ''}
+            </div>
+            <div class="overflow-x-auto">
+              <!-- الجدول كما طلبته بدقة: الباركود, اسم المريض, الجهة المرسلة, الفحص, الحالة الحالية, إجراء الأخصائي -->
+              <table class="w-full text-right text-xs">
+                <thead class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="p-4">الباركود</th>
+                    <th class="p-4">اسم المريض</th>
+                    <th class="p-4">الجهة المرسلة</th>
+                    <th class="p-4">الفحص</th>
+                    <th class="p-4">الحالة الحالية</th>
+                    ${hospitalActiveTab === 'specialist' ? '<th class="p-4 text-center">إجراء الأخصائي</th>' : ''}
+                    ${hospitalActiveTab === 'doctor' ? '<th class="p-4 text-center">التقرير</th>' : ''}
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${hospitalSamples.length === 0 ? `<tr><td colspan="100%" class="p-10 text-center text-slate-400">لا توجد عينات.</td></tr>` : hospitalSamples.map(s => {
+                    const manual = s.is_manual || getManualTestType(s.test_type);
+                    const isDr = s.selected_tests && s.selected_tests.length > 0;
+                    return `
+                    <tr class="hover:bg-slate-50/70 transition ${s.status === 'Completed' ? 'completed-row' : ''}">
+                      <td class="p-4 font-black font-mono text-brand-700">${s.sample_id}</td>
+                      <td class="p-4 font-bold text-slate-800">${s.patient_ref}</td>
+                      <td class="p-4 font-bold text-slate-800">${s.sender_facility}</td>
+                      <td class="p-4">
+                        <span class="font-bold text-slate-900">${s.test_type}</span>
+                        ${isDr ? `<button onclick="viewDr0006Sheet('${s.sample_id}')" class="text-[10px] text-brand-600 block hover:underline mt-1">DR-0006 (${s.selected_tests.length})</button>` : ''}
+                      </td>
+                      <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_MAP[s.status]?.color}">${STATUS_MAP[s.status]?.label}</span>
+                      </td>
+                      ${hospitalActiveTab === 'specialist' ? `
+                        <td class="p-4 text-center">
+                          <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                            ${s.status === 'Sent' ? `<span class="text-[10px] text-slate-400">بانتظار مزامنة LIS</span>`
+                            : s.status === 'Received' ? `<button onclick="changeSampleState('${s.sample_id}', 'In-Testing')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold">بدء الفحص</button>`
+                            : s.status === 'In-Testing' ? (manual ? `<button onclick="openManualEntryModal('${s.sample_id}')" class="px-3 py-1.5 bg-amber-600 text-white rounded-xl font-bold">إدخال النتيجة</button>` : `<button onclick="autoProcessIncomingBarcode('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl font-bold">إنجاز آلي</button>`)
+                            : `<button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl font-bold">التقرير</button>`}
+                          </div>
+                        </td>
+                      ` : ''}
+                      ${hospitalActiveTab === 'doctor' ? `
+                        <td class="p-4 text-center">
+                          ${s.status === 'Completed' ? `<button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl font-bold">التقرير</button>` : `<span class="text-slate-400">-</span>`}
+                        </td>
+                      ` : ''}
+                    </tr>
+                  `}).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSenderDashboard(user) {
+      const samples = db.getSamples().filter(s => s.sender_facility === user.facility_name);
+      const isRehab = user.facility_name.includes("التأهيل");
+      const isPrison = user.facility_name.includes("سجن");
+
+      samples.sort((a, b) => {
+        const weights = { 'In-Testing': 1, 'Received': 2, 'Pending': 3, 'Sent': 4, 'Completed': 5 };
+        return (weights[a.status] || 6) - (weights[b.status] || 6);
+      });
+
+      return `
+        <div class="space-y-6 animate-in fade-in duration-300">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-black text-slate-900">${user.facility_name}</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isRehab ? 'bg-purple-100 text-purple-800' : isPrison ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                  ${isRehab ? 'مركز رعاية وتأهيل' : isPrison ? 'قطاع السجون والإصلاحيات' : ''}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">توجيه العينات وحفظ النتائج سحابياً</p>
+            </div>
+            <div>
+              <button onclick="openNewSampleModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>+ تسجيل وإرسال عينة جديدة</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="route" class="w-4 h-4 text-brand-600"></i>
+                <span>شحنات العينات الصادرة والتتبع المباشر</span>
+              </h2>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${samples.length === 0 ? `<div class="p-12 text-center text-slate-400">لا توجد عينات مسجلة حالياً لهذه الجهة. اضغط بالأعلى لإرسال عينة جديدة.</div>` : samples.map(s => {
+                const isDr = s.selected_tests && s.selected_tests.length > 0;
+                return `
+                <div class="p-6 hover:bg-slate-50/50 transition ${s.status === 'Completed' ? 'completed-row' : ''}">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="font-black text-sm font-mono text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">${s.sample_id}</span>
+                      <span class="text-xs bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded font-bold">${s.patient_ref}</span>
+                    </div>
+                    ${s.status === 'Completed' ? `<button onclick="showResultModal('${s.sample_id}')" class="px-3 py-1 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm">عرض النتيجة</button>` : ''}
+                  </div>
+                  <div class="text-xs text-slate-700 mb-2">
+                    <span class="font-bold text-slate-900">الفحص:</span> ${s.test_type} | 
+                    <span class="font-bold text-slate-900">الوجهة:</span> ${s.assigned_lab}
+                  </div>
+                  ${isDr ? `<button onclick="viewDr0006Sheet('${s.sample_id}')" class="text-[10px] text-brand-600 font-bold mb-2 block hover:underline">عرض استمارة DR-0006</button>` : ''}
+                  ${s.attachment_name ? `<button onclick="previewFile('${s.attachment_name}', '${s.sample_id}')" class="text-[10px] text-blue-700 font-bold mb-2 block hover:underline">المستند المرفق: ${s.attachment_name}</button>` : ''}
+                  <span class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5">
+                    ${STATUS_MAP[s.status].label}
+                  </span>
+                </div>
+              `}).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBloodBankDashboard(user) {
+      const inventory = db.getBloodInventory();
+      const samples = db.getSamples().filter(s => s.department === 'BloodBank');
+      samples.sort((a, b) => (a.status === 'Completed' ? 1 : -1));
+
+      return `
+        <div class="space-y-6 animate-in fade-in duration-300">
+          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+            <h1 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i data-lucide="droplet" class="w-6 h-6 text-rose-600"></i> ${user.facility_name}
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">نظام Hematos لإدارة المخزون وتلبية طلبات النقل</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs">
+            <h3 class="font-bold text-slate-900 text-xs mb-3">المخزون الحالي لوحدات الدم</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              ${inventory.map(b => `
+                <div class="p-4 rounded-xl border border-rose-100 bg-rose-50 flex items-center justify-between">
+                  <span class="font-extrabold text-rose-700 text-lg" dir="ltr">${b.type}</span>
+                  <span class="text-xs font-bold bg-white px-2 py-1 rounded-md text-rose-900 shadow-sm">${b.count} كيس</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100">
+              <h2 class="font-bold text-slate-800 text-sm">طلبات نقل الدم الواردة</h2>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${samples.length === 0 ? '<div class="p-8 text-center text-slate-400 text-xs">لا توجد طلبات معلقة.</div>' : samples.map(s => `
+                <div class="p-4 hover:bg-slate-50 transition flex items-center justify-between ${s.status === 'Completed' ? 'completed-row' : ''}">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono text-brand-700 font-bold">${s.sample_id}</span>
+                      <span class="text-xs font-bold text-slate-700">${s.patient_ref}</span>
+                      <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">${s.notes}</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">الجهة: ${s.sender_facility} | المطلوب: ${s.test_type}</div>
+                  </div>
+                  <div>
+                    ${s.status === 'Sent' ? `
+                      <button onclick="approveBloodRequest('${s.sample_id}')" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition">
+                        صرف الكيس
+                      </button>
+                    ` : `<span class="text-xs text-emerald-700 font-bold"><i data-lucide="check" class="w-4 h-4 inline"></i> تم الصرف</span>`}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       APP INITIALIZATION & ROUTING
+       ========================================================================== */
+    function renderAuthView() {
+      const root = document.getElementById('app-root');
+      root.innerHTML = `
+        <div class="max-w-md mx-auto my-12 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-4 animate-in zoom-in duration-300">
+          <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-900">تسجيل الدخول إلى LabNexus</h2>
+          <div class="space-y-2 pt-2">
+            <button onclick="demoLogin('specialist')" class="w-full py-2.5 px-4 bg-brand-600 text-white rounded-xl text-xs font-bold transition hover:bg-brand-700">مستشفى بريدة المركزي</button>
+            <button onclick="demoLogin('specialist2')" class="w-full py-2.5 px-4 bg-brand-600 text-white rounded-xl text-xs font-bold transition hover:bg-brand-700">مستشفى الملك فهد التخصصي</button>
+            <button onclick="demoLogin('rehab_sender')" class="w-full py-2.5 px-4 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition hover:bg-slate-200">مركز التأهيل الشامل</button>
+            <button onclick="demoLogin('prison_sender')" class="w-full py-2.5 px-4 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition hover:bg-slate-200">عيادات السجن</button>
+            <button onclick="demoLogin('lis_node')" class="w-full py-2.5 px-4 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition hover:bg-indigo-100">نظام إدارة المختبرات (LIS)</button>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
     function renderNavbar() {
       const user = db.getUser();
       const slot = document.getElementById('nav-user-slot');
-
+      
       const btns = ['spec', 'spec2', 'blood', 'rehab', 'prison', 'lis'];
-      btns.forEach(id => {
-        const btn = document.getElementById('nav-btn-' + id);
-        if (btn) btn.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
+      btns.forEach(b => { 
+        const el = document.getElementById('nav-btn-'+b);
+        if(el) el.className = "px-3 py-1.5 rounded-xl transition text-slate-600 hover:text-slate-900";
       });
 
       if (user) {
-        if (user.facility_name === PRIMARY_HOSPITAL_NAME) document.getElementById('nav-btn-spec').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
-        if (user.facility_name === SPECIALIST_HOSPITAL_NAME) document.getElementById('nav-btn-spec2').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
-        if (user.role === 'blood_bank') document.getElementById('nav-btn-blood').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
-        if (user.facility_name === REHAB_NAME) document.getElementById('nav-btn-rehab').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
-        if (user.facility_name === PRISON_NAME) document.getElementById('nav-btn-prison').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
-        if (user.facility_name === LIS_NAME) document.getElementById('nav-btn-lis').classList.add('bg-white', 'text-brand-700', 'shadow-xs');
+        if (user.facility_name === PRIMARY_HOSPITAL_NAME) document.getElementById('nav-btn-spec')?.classList.add('bg-white', 'text-brand-700', 'shadow-xs');
+        if (user.facility_name === SPECIALIST_HOSPITAL_NAME) document.getElementById('nav-btn-spec2')?.classList.add('bg-white', 'text-brand-700', 'shadow-xs');
+        if (user.facility_name === REHAB_NAME) document.getElementById('nav-btn-rehab')?.classList.add('bg-white', 'text-brand-700', 'shadow-xs');
+        if (user.facility_name === PRISON_NAME) document.getElementById('nav-btn-prison')?.classList.add('bg-white', 'text-brand-700', 'shadow-xs');
+        if (user.facility_name === LIS_NAME) document.getElementById('nav-btn-lis')?.classList.add('bg-white', 'text-brand-700', 'shadow-xs');
       }
 
       if (!user) {
-        slot.innerHTML = `
-          <button onclick="renderAuthView()" class="text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
-            <i data-lucide="log-in" class="w-4 h-4"></i>
-            <span>تسجيل الدخول / حجز منشأة</span>
-          </button>
-        `;
+        slot.innerHTML = `<button onclick="renderAuthView()" class="text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-3.5 py-2 rounded-xl">تسجيل الدخول</button>`;
+        document.getElementById('top-records-btn').parentElement.classList.add('hidden');
       } else {
+        document.getElementById('top-records-btn').parentElement.classList.remove('hidden');
+        document.getElementById('top-records-btn').innerText = currentAppTab === 'records' ? 'الرئيسية' : 'سجلات العينات';
+        
         slot.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="text-right hidden sm:block">
-              <div class="text-xs font-bold text-slate-800">${user.name}</div>
-              <div class="text-[11px] text-slate-400 leading-none">${user.facility_name}</div>
-            </div>
-            <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-brand-700 text-xs">
-              ${user.name.charAt(0)}
-            </div>
-            <button onclick="logoutUser()" title="تسجيل الخروج" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition">
-              <i data-lucide="log-out" class="w-4 h-4"></i>
-            </button>
+          <div class="text-right hidden sm:block">
+            <div class="text-xs font-bold text-slate-800">${user.name}</div>
+            <div class="text-[10px] text-slate-400 font-bold leading-tight">${user.facility_name}</div>
           </div>
+          <button onclick="logoutUser()" title="تسجيل الخروج" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
         `;
       }
       lucide.createIcons();
@@ -2735,24 +2015,15 @@
       const root = document.getElementById('app-root');
       if (!root) return;
 
-      if (!user) {
-        renderAuthView();
-        renderLogs();
-        return;
-      }
+      if (!user) { renderAuthView(); renderLogs(); return; }
 
       if (currentAppTab === 'records') {
         root.innerHTML = renderRecordsView();
       } else {
-        if (user.role === 'specialist') {
-          root.innerHTML = renderHospitalDashboard(user);
-        } else if (user.role === 'blood_bank') {
-          root.innerHTML = renderBloodBankDashboard(user);
-        } else if (user.facility_name === LIS_NAME) {
-          root.innerHTML = renderLisDashboard(user);
-        } else {
-          root.innerHTML = renderSenderDashboard(user);
-        }
+        if (user.role === 'specialist') root.innerHTML = renderHospitalDashboard(user);
+        else if (user.role === 'blood_bank') root.innerHTML = renderBloodBankDashboard(user);
+        else if (user.facility_name === LIS_NAME) root.innerHTML = renderLisDashboard(user);
+        else root.innerHTML = renderSenderDashboard(user);
       }
 
       renderLogs();
@@ -2760,19 +2031,12 @@
     }
 
     function demoLogin(type) {
-      if (type === 'specialist') {
-        loginUser({ id: "usr-spec", name: "أخصائي / صالح الحربي", role: "specialist", facility_name: PRIMARY_HOSPITAL_NAME });
-      } else if (type === 'specialist2') {
-        loginUser({ id: "usr-spec2", name: "د. طارق الفوزان", role: "specialist", facility_name: SPECIALIST_HOSPITAL_NAME });
-      } else if (type === 'rehab_sender') {
-        loginUser({ id: "usr-rehab", name: "أخصائي / سلطان الحربي", role: "sender", facility_name: REHAB_NAME });
-      } else if (type === 'prison_sender') {
-        loginUser({ id: "usr-prison", name: "رائد طبيب / خالد المطيري", role: "sender", facility_name: PRISON_NAME });
-      } else if (type === 'lis_sender') {
-        loginUser({ id: "usr-lis", name: "مدير نظام LIS", role: "integration", facility_name: LIS_NAME });
-      } else if (type === 'blood_bank') {
-        loginUser({ id: "usr-blood", name: "أخصائي بنك الدم", role: "blood_bank", facility_name: BLOOD_BANK_NAME });
-      }
+      if (type === 'specialist') loginUser({ id: "usr-spec", name: "أخصائي / صالح الحربي", role: "specialist", facility_name: PRIMARY_HOSPITAL_NAME });
+      else if (type === 'specialist2') loginUser({ id: "usr-spec2", name: "د. طارق الفوزان", role: "specialist", facility_name: SPECIALIST_HOSPITAL_NAME });
+      else if (type === 'rehab_sender') loginUser({ id: "usr-rehab", name: "أخصائي / سلطان الحربي", role: "sender", facility_name: REHAB_NAME });
+      else if (type === 'prison_sender') loginUser({ id: "usr-prison", name: "رائد طبيب / خالد المطيري", role: "sender", facility_name: PRISON_NAME });
+      else if (type === 'lis_node') loginUser({ id: "usr-lis", name: "مدير نظام LIS", role: "integration", facility_name: LIS_NAME });
+      else if (type === 'blood_bank') loginUser({ id: "usr-blood", name: "أخصائي بنك الدم", role: "blood_bank", facility_name: BLOOD_BANK_NAME });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
